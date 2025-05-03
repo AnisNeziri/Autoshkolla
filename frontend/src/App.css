@@ -80,8 +80,34 @@ body, html {
 }
 
 .footer {
-  background: #004aad;
-  color: white;
+  display: flex;
+  justify-content: center;
   padding: 20px;
-  margin-top: 40px;
+  background-color: #333;
+  color: white;
+}
+
+.footer-left,
+.footer-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-left {
+  margin-right: 40px; /* Adds space between the left and right sections */
+}
+
+.footer-right {
+  margin-left: 40px; /* Adds space between the left and right sections */
+  align-items: flex-end;
+}
+
+.social-links {
+  display: flex;
+}
+
+.social-icon {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
 }
