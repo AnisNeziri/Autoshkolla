@@ -1,18 +1,25 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
+| This file handles non-API routes. We use it here to serve a React app
+| built into the /public directory and support React Router.
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/{any}', function () {
+    $path = public_path('index.html');
+
+    if (!File::exists($path)) {
+        abort(404, 'React frontend not built yet.');
+    }
+
+    return Response::file($path);
+})->where('any', '.*');
