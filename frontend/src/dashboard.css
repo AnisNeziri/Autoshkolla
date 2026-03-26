@@ -1,0 +1,36 @@
+.dash-shell {
+  min-height: 100vh;
+  background: #f6f8fb;
+}
+
+.dash-sidebar {
+  width: 260px;
+  background: linear-gradient(180deg, #0b2d56 0%, #0f3b74 100%);
+  color: #fff;
+}
+
+.dash-sidebar a {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+}
+
+.dash-sidebar a:hover {
+  color: #fff;
+}
+
+.dash-sidebar .nav-link.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.dash-topbar {
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dash-card {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  background: #fff;
+}
+
