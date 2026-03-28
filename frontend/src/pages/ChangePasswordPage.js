@@ -25,11 +25,11 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setError('');
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError(sq.auth.errors.passwordMin8);
       return;
     }
     if (password !== passwordConfirmation) {
-      setError('Password confirmation does not match.');
+      setError(sq.auth.errors.passwordMismatch);
       return;
     }
     setLoading(true);

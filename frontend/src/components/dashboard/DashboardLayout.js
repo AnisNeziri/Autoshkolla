@@ -92,7 +92,7 @@ export default function DashboardLayout() {
                 className="btn btn-outline-danger"
                 onClick={async () => {
                   await logout();
-                  navigate('/login');
+                  navigate('/');
                 }}
               >
                 {sq.dashboard.logout}
