@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { getApiErrorMessage } from './services/api';
 import sq from './i18n/sq';
+import AuthShell from './components/auth/AuthShell';
 
 function Login() {
   const { authService, setAuth } = useAuth();
@@ -76,7 +77,8 @@ function Login() {
       <p className="mt-3 small text-secondary mb-0">
         {sq.auth.noAccount} <Link to="/register">{sq.auth.linkRegister}</Link>
       </p>
-    </div>
+      </div>
+    </AuthShell>
   );
 }
 
