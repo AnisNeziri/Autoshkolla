@@ -1,12 +1,17 @@
-<?php namespace App\Http\Controllers;
+<?php
+
+namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
     public function index()
     {
-        return User::all();
+        return User::query()
+            ->select(['id', 'name', 'email', 'role', 'autoschool_id', 'must_change_password', 'created_at'])
+            ->orderBy('id')
+            ->get();
     }
 }
+
