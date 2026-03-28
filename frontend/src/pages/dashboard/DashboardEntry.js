@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../auth/roles';
+import sq from '../../i18n/sq';
 
 export default function DashboardEntry() {
   const { role } = useAuth();
@@ -16,8 +17,8 @@ export default function DashboardEntry() {
 
   return (
     <div className="dash-card p-4">
-      <div className="fw-semibold">Loading dashboard…</div>
-      <div className="text-secondary small">Redirecting based on your role.</div>
+      <div className="fw-semibold">{sq.dashboard.loadingDashboard}</div>
+      <div className="text-secondary small">{sq.dashboard.redirectRole}</div>
     </div>
   );
 }

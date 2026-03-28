@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import InlineAlert from '../../../components/common/InlineAlert';
 import { getApiErrorMessage } from '../../../services/api';
 import { useProfessorService } from '../../../hooks/useProfessorService';
+import sq from '../../../i18n/sq';
 
 export default function ProfessorOverview() {
   const professorApi = useProfessorService();
@@ -46,36 +47,34 @@ export default function ProfessorOverview() {
   return (
     <div className="d-flex flex-column gap-3">
       <div className="dash-card p-4">
-        <div className="fw-semibold fs-5">Professor overview</div>
-        <div className="text-secondary mt-1">
-          Manage your students, lectures, driving sessions, and exams from the Students section.
-        </div>
+        <div className="fw-semibold fs-5">{sq.professor.overviewTitle}</div>
+        <div className="text-secondary mt-1">{sq.professor.overviewSubtitle}</div>
         <Link to="/dashboard/professor/students" className="btn btn-primary mt-3">
-          Go to students
+          {sq.professor.goStudents}
         </Link>
       </div>
 
-      {error ? <InlineAlert title="API error" message={error} /> : null}
+      {error ? <InlineAlert title={sq.errors.apiError} message={error} /> : null}
 
       <div className="row g-3">
         <div className="col-md-4">
           <div className="dash-card p-4">
-            <div className="text-secondary small">Your students</div>
+            <div className="text-secondary small">{sq.professor.yourStudents}</div>
             <div className="fs-2 fw-bold">{loading ? '—' : metrics.totalStudents}</div>
           </div>
         </div>
         <div className="col-md-4">
           <div className="dash-card p-4">
-            <div className="text-secondary small">Avg. progress</div>
+            <div className="text-secondary small">{sq.professor.avgProgress}</div>
             <div className="fs-2 fw-bold">{loading ? '—' : `${metrics.averageProgress}%`}</div>
           </div>
         </div>
         <div className="col-md-4">
           <div className="dash-card p-4">
-            <div className="text-secondary small">Quick link</div>
+            <div className="text-secondary small">{sq.professor.shortcut}</div>
             <div className="mt-2">
               <Link to="/dashboard/professor/students" className="btn btn-outline-primary btn-sm">
-                Open list
+                {sq.professor.openList}
               </Link>
             </div>
           </div>

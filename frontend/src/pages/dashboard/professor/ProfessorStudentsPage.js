@@ -4,6 +4,7 @@ import InlineAlert from '../../../components/common/InlineAlert';
 import ProgressBar from '../../../components/common/ProgressBar';
 import { getApiErrorMessage } from '../../../services/api';
 import { useProfessorService } from '../../../hooks/useProfessorService';
+import sq from '../../../i18n/sq';
 
 export default function ProfessorStudentsPage() {
   const professorApi = useProfessorService();
@@ -49,7 +50,7 @@ export default function ProfessorStudentsPage() {
   const createStudent = async (e) => {
     e.preventDefault();
     if (!form.name?.trim() || !form.surname?.trim() || !form.email?.trim()) {
-      setError('Name, surname, and email are required.');
+      setError(sq.professor.requiredNameSurnameEmail);
       return;
     }
     setCreateLoading(true);
@@ -76,28 +77,26 @@ export default function ProfessorStudentsPage() {
     <div className="d-flex flex-column gap-3">
       <div className="dash-card p-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-          <div className="fw-semibold fs-5">Students</div>
-          <div className="text-secondary small">
-            You only see candidates you created. Maximum 12 lectures and 20 driving sessions each.
-          </div>
+          <div className="fw-semibold fs-5">{sq.professor.studentsTitle}</div>
+          <div className="text-secondary small">{sq.professor.studentsSubtitle}</div>
         </div>
         <button type="button" className="btn btn-primary" onClick={() => setModalOpen(true)}>
-          + Create student
+          {sq.professor.createStudentHint}
         </button>
       </div>
 
-      {error ? <InlineAlert title="Error" message={error} /> : null}
+      {error ? <InlineAlert title={sq.professor.error} message={error} /> : null}
 
       {modalOpen && (
         <div className="modal d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,.45)' }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">New student</h5>
+                <h5 className="modal-title">{sq.professor.newStudent}</h5>
                 <button
                   type="button"
                   className="btn-close"
-                  aria-label="Close"
+                  aria-label={sq.professor.close}
                   onClick={() => {
                     setModalOpen(false);
                     setGeneratedPassword('');
@@ -108,7 +107,7 @@ export default function ProfessorStudentsPage() {
                 <div className="modal-body">
                   <div className="row g-2">
                     <div className="col-6">
-                      <label className="form-label small">Name</label>
+                      <label className="form-label small">{sq.professor.name}</label>
                       <input
                         className="form-control"
                         value={form.name}
@@ -116,7 +115,7 @@ export default function ProfessorStudentsPage() {
                       />
                     </div>
                     <div className="col-6">
-                      <label className="form-label small">Surname</label>
+                      <label className="form-label small">{sq.professor.surname}</label>
                       <input
                         className="form-control"
                         value={form.surname}
@@ -124,7 +123,7 @@ export default function ProfessorStudentsPage() {
                       />
                     </div>
                     <div className="col-12">
-                      <label className="form-label small">Email (login)</label>
+                      <label className="form-label small">{sq.auth.email}</label>
                       <input
                         type="email"
                         className="form-control"
@@ -133,7 +132,7 @@ export default function ProfessorStudentsPage() {
                       />
                     </div>
                     <div className="col-12">
-                      <label className="form-label small">Theoretical group</label>
+                      <label className="form-label small">{sq.professor.groupOptional}</label>
                       <input
                         className="form-control"
                         value={form.theoretical_group}
@@ -143,8 +142,8 @@ export default function ProfessorStudentsPage() {
                   </div>
                   {generatedPassword ? (
                     <div className="alert alert-success mt-3 small mb-0">
-                      Temporary password: <strong>{generatedPassword}</strong>
-                      <div className="mt-1">Student must change password on first login.</div>
+                      {sq.professor.tempPassword}: <strong>{generatedPassword}</strong>
+                      <div className="mt-1">{sq.professor.tempPasswordHint}</div>
                     </div>
                   ) : null}
                 </div>
@@ -157,10 +156,10 @@ export default function ProfessorStudentsPage() {
                       setGeneratedPassword('');
                     }}
                   >
-                    Close
+                    {sq.professor.close}
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={createLoading}>
-                    {createLoading ? 'Creating…' : 'Create'}
+                    {createLoading ? sq.professor.creating : sq.professor.create}
                   </button>
                 </div>
               </form>
@@ -174,33 +173,36 @@ export default function ProfessorStudentsPage() {
           <table className="table align-middle mb-0">
             <thead>
               <tr className="text-secondary small">
-                <th>Student</th>
-                <th>Group</th>
-                <th>Lectures</th>
-                <th>Driving</th>
-                <th>Written</th>
-                <th>Driving test</th>
-                <th style={{ width: 200 }}>Progress</th>
+                <th>{sq.professor.colStudent}</th>
+                <th>{sq.professor.colGroup}</th>
+                <th>{sq.professor.colLectures}</th>
+                <th>{sq.professor.colDriving}</th>
+                <th>{sq.professor.colWritten}</th>
+                <th>{sq.professor.colDrivingTest}</th>
+                <th style={{ width: 200 }}>{sq.professor.colProgress}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={7} className="text-center text-secondary py-4">
-                    Loading…
+                    {sq.dashboard.loading}
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center text-secondary py-4">
-                    No students yet. Create one to get started.
+                    {sq.professor.noStudents}
                   </td>
                 </tr>
               ) : (
                 rows.map((r) => (
                   <tr key={r.id}>
                     <td className="fw-semibold">
-                      <Link to={`/dashboard/professor/students/${r.id}`} className="text-decoration-none">
+                      <Link
+                        to={`/dashboard/professor/students/${r.id}`}
+                        className="text-decoration-none"
+                      >
                         {r.name} {r.surname}
                       </Link>
                       <div className="small text-secondary">{r.email}</div>
@@ -218,7 +220,7 @@ export default function ProfessorStudentsPage() {
                       <span
                         className={`badge ${r.written_test_passed ? 'text-bg-success' : 'text-bg-secondary'}`}
                       >
-                        {r.written_test_passed ? 'Passed' : 'Not passed'}
+                        {r.written_test_passed ? sq.professor.passed : sq.professor.notPassed}
                       </span>
                     </td>
                     <td className="text-secondary small">{r.driving_test_date || '—'}</td>

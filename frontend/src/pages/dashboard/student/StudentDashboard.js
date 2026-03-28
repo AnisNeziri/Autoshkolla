@@ -3,6 +3,7 @@ import ProgressBar from '../../../components/common/ProgressBar';
 import InlineAlert from '../../../components/common/InlineAlert';
 import { getApiErrorMessage } from '../../../services/api';
 import { useStudentPortalService } from '../../../hooks/useStudentPortalService';
+import sq from '../../../i18n/sq';
 
 export default function StudentDashboard() {
   const api = useStudentPortalService();
@@ -36,27 +37,38 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <div className="dash-card p-4">
-        <div className="text-secondary">Loading your dashboard…</div>
+        <div className="text-secondary">{sq.dashboard.loadingDashboard}</div>
       </div>
     );
   }
 
   if (error) {
-    return <InlineAlert title="Could not load dashboard" message={error} />;
+    return <InlineAlert title={sq.studentPortal.loadError} message={error} />;
   }
+
+  const scheduleGroup = data?.profile?.professor_group;
 
   return (
     <div className="d-flex flex-column gap-3">
       <div className="dash-card p-4">
         <div className="fw-semibold fs-5">
-          {data?.profile?.name} {data?.profile?.surname}
+          {sq.studentPortal.greeting}, {data?.profile?.name} {data?.profile?.surname}
         </div>
         <div className="text-secondary small">{data?.profile?.email}</div>
         <div className="mt-2 small">
-          Group: <span className="fw-semibold">{data?.profile?.theoretical_group || '—'}</span>
+          {sq.studentPortal.groupLabel}:{' '}
+          <span className="fw-semibold">
+            {scheduleGroup?.name || data?.profile?.theoretical_group || '—'}
+          </span>
         </div>
+        {scheduleGroup ? (
+          <div className="mt-2 small text-secondary">
+            {sq.professor.lectureDays}: {scheduleGroup.lecture_days || '—'} · {sq.professor.scheduleTime}:{' '}
+            {scheduleGroup.schedule_time || '—'}
+          </div>
+        ) : null}
         <div className="mt-3" style={{ maxWidth: 360 }}>
-          <div className="small text-secondary mb-1">Overall progress (read-only)</div>
+          <div className="small text-secondary mb-1">{sq.studentPortal.progressReadonly}</div>
           <div className="d-flex align-items-center gap-2">
             <div className="flex-grow-1">
               <ProgressBar value={progressFraction} />
@@ -69,21 +81,21 @@ export default function StudentDashboard() {
       <div className="row g-3">
         <div className="col-lg-6">
           <div className="dash-card p-4">
-            <div className="fw-semibold mb-2">Lectures & attendance</div>
+            <div className="fw-semibold mb-2">{sq.studentPortal.lecturesAttendance}</div>
             <div className="table-responsive">
               <table className="table table-sm">
                 <thead>
                   <tr className="text-secondary small">
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Present</th>
+                    <th>{sq.professor.details.date}</th>
+                    <th>{sq.professor.details.time}</th>
+                    <th>{sq.professor.details.present}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(data?.lectures || []).length === 0 ? (
                     <tr>
                       <td colSpan={3} className="text-secondary">
-                        No lectures recorded
+                        {sq.studentPortal.noLectures}
                       </td>
                     </tr>
                   ) : (
@@ -91,7 +103,7 @@ export default function StudentDashboard() {
                       <tr key={`${l.date}-${idx}`}>
                         <td>{l.date}</td>
                         <td>{l.time}</td>
-                        <td>{l.present ? 'Yes' : 'No'}</td>
+                        <td>{l.present ? sq.professor.details.yes : sq.professor.details.no}</td>
                       </tr>
                     ))
                   )}
@@ -102,21 +114,21 @@ export default function StudentDashboard() {
         </div>
         <div className="col-lg-6">
           <div className="dash-card p-4">
-            <div className="fw-semibold mb-2">Driving sessions</div>
+            <div className="fw-semibold mb-2">{sq.studentPortal.drivingSessions}</div>
             <div className="table-responsive">
               <table className="table table-sm">
                 <thead>
                   <tr className="text-secondary small">
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Status</th>
+                    <th>{sq.professor.details.date}</th>
+                    <th>{sq.professor.details.time}</th>
+                    <th>{sq.professor.details.status}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(data?.driving_sessions || []).length === 0 ? (
                     <tr>
                       <td colSpan={3} className="text-secondary">
-                        No sessions scheduled
+                        {sq.studentPortal.noSessions}
                       </td>
                     </tr>
                   ) : (
@@ -124,7 +136,9 @@ export default function StudentDashboard() {
                       <tr key={`${d.date}-${idx}`}>
                         <td>{d.date}</td>
                         <td>{d.time}</td>
-                        <td>{d.completed ? 'Completed' : 'Scheduled'}</td>
+                        <td>
+                          {d.completed ? sq.professor.details.completed : sq.professor.details.scheduled}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -136,18 +150,18 @@ export default function StudentDashboard() {
       </div>
 
       <div className="dash-card p-4">
-        <div className="fw-semibold mb-2">Exams</div>
+        <div className="fw-semibold mb-2">{sq.studentPortal.exams}</div>
         <div className="row g-3">
           <div className="col-md-6">
-            <div className="small text-secondary">Written test</div>
+            <div className="small text-secondary">{sq.studentPortal.written}</div>
             <div>
               {data?.written_exam
-                ? `${data.written_exam.passed ? 'Passed' : 'Not passed'} · ${data.written_exam.exam_date || ''}`
-                : 'Not scheduled'}
+                ? `${data.written_exam.passed ? sq.professor.passed : sq.professor.notPassed} · ${data.written_exam.exam_date || ''}`
+                : sq.studentPortal.notScheduled}
             </div>
           </div>
           <div className="col-md-6">
-            <div className="small text-secondary">Driving test</div>
+            <div className="small text-secondary">{sq.studentPortal.practical}</div>
             <div>{data?.practical_exam?.exam_date || '—'}</div>
           </div>
         </div>

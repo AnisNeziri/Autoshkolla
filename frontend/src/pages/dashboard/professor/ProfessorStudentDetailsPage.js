@@ -4,6 +4,7 @@ import InlineAlert from '../../../components/common/InlineAlert';
 import ProgressBar from '../../../components/common/ProgressBar';
 import { getApiErrorMessage } from '../../../services/api';
 import { useProfessorService } from '../../../hooks/useProfessorService';
+import sq from '../../../i18n/sq';
 
 export default function ProfessorStudentDetailsPage() {
   const { studentId } = useParams();
@@ -51,18 +52,18 @@ export default function ProfessorStudentDetailsPage() {
   }, [detail]);
 
   const studentName = useMemo(() => {
-    if (!detail) return `Student #${studentId}`;
-    return `${detail.name || ''} ${detail.surname || ''}`.trim() || `Student #${studentId}`;
+    if (!detail) return `Studenti #${studentId}`;
+    return `${detail.name || ''} ${detail.surname || ''}`.trim() || `Studenti #${studentId}`;
   }, [detail, studentId]);
 
   const addLecture = async (e) => {
     e.preventDefault();
     if (!lectureForm.date || !lectureForm.time) {
-      setError('Please select lecture date and time.');
+      setError(sq.professor.details.needDateTimeLecture);
       return;
     }
     if ((detail?.lectures?.length || 0) >= 12) {
-      setError('Maximum of 12 lectures.');
+      setError(sq.professor.details.maxLectures);
       return;
     }
     setSaving(true);
@@ -81,11 +82,11 @@ export default function ProfessorStudentDetailsPage() {
   const addSession = async (e) => {
     e.preventDefault();
     if (!sessionForm.date || !sessionForm.time) {
-      setError('Please select driving session date and time.');
+      setError(sq.professor.details.needDateTimeSession);
       return;
     }
     if ((detail?.driving_sessions?.length || 0) >= 20) {
-      setError('Maximum of 20 driving sessions.');
+      setError(sq.professor.details.maxSessions);
       return;
     }
     setSaving(true);
@@ -134,6 +135,10 @@ export default function ProfessorStudentDetailsPage() {
 
   const saveTests = async (e) => {
     e.preventDefault();
+    if (!writtenPassed && drivingTestDate) {
+      setError(sq.professor.details.writtenFirst);
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -162,7 +167,7 @@ export default function ProfessorStudentDetailsPage() {
           <div>
             <div className="text-secondary small">
               <Link to="/dashboard/professor/students" className="text-decoration-none">
-                ← Back to students
+                ← {sq.professor.backStudents}
               </Link>
             </div>
             <div className="fw-semibold fs-5 mt-1">{studentName}</div>
@@ -182,35 +187,37 @@ export default function ProfessorStudentDetailsPage() {
 
         <div className="row g-2 mt-3 align-items-end">
           <div className="col-md-6">
-            <label className="form-label small">Theoretical group</label>
+            <label className="form-label small">{sq.professor.details.theoreticalGroup}</label>
             <input
               className="form-control"
               value={theoreticalGroup}
               onChange={(e) => setTheoreticalGroup(e.target.value)}
-              placeholder="Group name"
             />
           </div>
           <div className="col-md-6">
             <button type="button" className="btn btn-outline-primary" disabled={saving} onClick={saveGroup}>
-              Save group
+              {sq.professor.details.saveGroupBtn}
             </button>
           </div>
         </div>
       </div>
 
-      {error ? <InlineAlert title="Action failed" message={error} /> : null}
+      {error ? <InlineAlert title={sq.errors.actionFailed} message={error} /> : null}
 
       <div className="row g-3">
         <div className="col-12 col-lg-6">
           <div className="dash-card p-4">
             <div className="d-flex justify-content-between">
-              <div className="fw-semibold">Lectures</div>
-              <span className="badge text-bg-light">{lectures.length}/12</span>
+              <div className="fw-semibold">{sq.professor.details.lectures}</div>
+              <span className="badge text-bg-light">
+                {lectures.length}
+                {sq.professor.details.lectureCap}
+              </span>
             </div>
             <hr />
             <form className="row g-2" onSubmit={addLecture}>
               <div className="col-6">
-                <label className="form-label small">Date</label>
+                <label className="form-label small">{sq.professor.details.date}</label>
                 <input
                   type="date"
                   className="form-control"
@@ -219,7 +226,7 @@ export default function ProfessorStudentDetailsPage() {
                 />
               </div>
               <div className="col-6">
-                <label className="form-label small">Time</label>
+                <label className="form-label small">{sq.professor.details.time}</label>
                 <input
                   type="time"
                   className="form-control"
@@ -235,13 +242,13 @@ export default function ProfessorStudentDetailsPage() {
                     setLectureForm((s) => ({ ...s, present: e.target.value === 'present' }))
                   }
                 >
-                  <option value="present">Present</option>
-                  <option value="absent">Absent</option>
+                  <option value="present">{sq.professor.details.present}</option>
+                  <option value="absent">{sq.professor.details.absent}</option>
                 </select>
               </div>
               <div className="col-12 text-end">
                 <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
-                  Add lecture
+                  {sq.professor.details.addLecture}
                 </button>
               </div>
             </form>
@@ -249,15 +256,15 @@ export default function ProfessorStudentDetailsPage() {
               <table className="table table-sm">
                 <thead>
                   <tr className="text-secondary small">
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Attendance</th>
+                    <th>{sq.professor.details.date}</th>
+                    <th>{sq.professor.details.time}</th>
+                    <th>{sq.professor.details.attendance}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={3}>Loading…</td>
+                      <td colSpan={3}>{sq.dashboard.loading}</td>
                     </tr>
                   ) : (
                     lectures.map((l) => (
@@ -270,7 +277,7 @@ export default function ProfessorStudentDetailsPage() {
                             className={`btn btn-sm ${l.present ? 'btn-success' : 'btn-outline-secondary'}`}
                             onClick={() => toggleLecturePresent(l.id, !l.present)}
                           >
-                            {l.present ? 'Present' : 'Absent'}
+                            {l.present ? sq.professor.details.present : sq.professor.details.absent}
                           </button>
                         </td>
                       </tr>
@@ -285,13 +292,16 @@ export default function ProfessorStudentDetailsPage() {
         <div className="col-12 col-lg-6">
           <div className="dash-card p-4">
             <div className="d-flex justify-content-between">
-              <div className="fw-semibold">Driving sessions</div>
-              <span className="badge text-bg-light">{sessions.length}/20</span>
+              <div className="fw-semibold">{sq.professor.details.driving}</div>
+              <span className="badge text-bg-light">
+                {sessions.length}
+                {sq.professor.details.drivingCap}
+              </span>
             </div>
             <hr />
             <form className="row g-2" onSubmit={addSession}>
               <div className="col-6">
-                <label className="form-label small">Date</label>
+                <label className="form-label small">{sq.professor.details.date}</label>
                 <input
                   type="date"
                   className="form-control"
@@ -300,7 +310,7 @@ export default function ProfessorStudentDetailsPage() {
                 />
               </div>
               <div className="col-6">
-                <label className="form-label small">Time</label>
+                <label className="form-label small">{sq.professor.details.time}</label>
                 <input
                   type="time"
                   className="form-control"
@@ -310,7 +320,7 @@ export default function ProfessorStudentDetailsPage() {
               </div>
               <div className="col-12 text-end">
                 <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
-                  Add session
+                  {sq.professor.details.addSession}
                 </button>
               </div>
             </form>
@@ -318,15 +328,15 @@ export default function ProfessorStudentDetailsPage() {
               <table className="table table-sm">
                 <thead>
                   <tr className="text-secondary small">
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Status</th>
+                    <th>{sq.professor.details.date}</th>
+                    <th>{sq.professor.details.time}</th>
+                    <th>{sq.professor.details.status}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={3}>Loading…</td>
+                      <td colSpan={3}>{sq.dashboard.loading}</td>
                     </tr>
                   ) : (
                     sessions.map((d) => (
@@ -339,7 +349,7 @@ export default function ProfessorStudentDetailsPage() {
                             className={`btn btn-sm ${d.completed ? 'btn-success' : 'btn-outline-secondary'}`}
                             onClick={() => toggleSessionDone(d.id, !d.completed)}
                           >
-                            {d.completed ? 'Completed' : 'Scheduled'}
+                            {d.completed ? sq.professor.details.completed : sq.professor.details.scheduled}
                           </button>
                         </td>
                       </tr>
@@ -353,21 +363,21 @@ export default function ProfessorStudentDetailsPage() {
       </div>
 
       <div className="dash-card p-4">
-        <div className="fw-semibold">Exams</div>
+        <div className="fw-semibold">{sq.professor.details.exams}</div>
         <form className="row g-3 mt-1 align-items-end" onSubmit={saveTests}>
           <div className="col-md-4">
-            <label className="form-label small">Written test passed</label>
+            <label className="form-label small">{sq.professor.details.writtenPassed}</label>
             <select
               className="form-select"
               value={writtenPassed ? 'yes' : 'no'}
               onChange={(e) => setWrittenPassed(e.target.value === 'yes')}
             >
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
+              <option value="no">{sq.professor.details.no}</option>
+              <option value="yes">{sq.professor.details.yes}</option>
             </select>
           </div>
           <div className="col-md-4">
-            <label className="form-label small">Driving test date</label>
+            <label className="form-label small">{sq.professor.details.drivingTestDate}</label>
             <input
               type="date"
               className="form-control"
@@ -378,7 +388,7 @@ export default function ProfessorStudentDetailsPage() {
           </div>
           <div className="col-md-4 text-md-end">
             <button type="submit" className="btn btn-success" disabled={saving}>
-              Save exams
+              {sq.professor.details.saveExams}
             </button>
           </div>
         </form>

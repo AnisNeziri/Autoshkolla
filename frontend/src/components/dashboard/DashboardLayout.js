@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../auth/roles';
+import sq from '../../i18n/sq';
 
 function SidebarLink({ to, label, end }) {
   return (
@@ -17,6 +18,13 @@ function SidebarLink({ to, label, end }) {
   );
 }
 
+function roleLabel(role) {
+  if (role === ROLES.ADMIN) return sq.roles.admin;
+  if (role === ROLES.PROFESSOR) return sq.roles.professor;
+  if (role === ROLES.STUDENT) return sq.roles.student;
+  return role || sq.dashboard.unknownRole;
+}
+
 export default function DashboardLayout() {
   const { displayName, role, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,17 +33,17 @@ export default function DashboardLayout() {
   const navItems = useMemo(() => {
     if (role === ROLES.PROFESSOR) {
       return [
-        { to: '/dashboard/professor', label: 'Overview', end: true },
-        { to: '/dashboard/professor/students', label: 'Students' },
+        { to: '/dashboard/professor', label: sq.professor.sidebarOverview, end: true },
+        { to: '/dashboard/professor/students', label: sq.professor.studentsTitle },
       ];
     }
     if (role === ROLES.ADMIN) {
-      return [{ to: '/dashboard/admin', label: 'Schools & analytics', end: true }];
+      return [{ to: '/dashboard/admin', label: sq.admin.title, end: true }];
     }
     if (role === ROLES.STUDENT) {
-      return [{ to: '/dashboard/student', label: 'My progress', end: true }];
+      return [{ to: '/dashboard/student', label: sq.studentPortal.navTitle, end: true }];
     }
-    return [{ to: '/dashboard', label: 'Dashboard', end: true }];
+    return [{ to: '/dashboard', label: sq.dashboard.title, end: true }];
   }, [role]);
 
   return (
@@ -45,8 +53,8 @@ export default function DashboardLayout() {
         aria-label="Sidebar navigation"
       >
         <div className="mb-3">
-          <div className="fw-bold fs-5">Autoshkolla</div>
-          <div className="small opacity-75">Management System</div>
+          <div className="fw-bold fs-5">{sq.brand}</div>
+          <div className="small opacity-75">{sq.brandTagline}</div>
         </div>
         <nav className="nav nav-pills flex-column gap-1">
           {navItems.map((it) => (
@@ -55,7 +63,7 @@ export default function DashboardLayout() {
         </nav>
 
         <div className="mt-auto pt-3 small opacity-75">
-          Role: <span className="fw-semibold">{role || 'UNKNOWN'}</span>
+          {sq.dashboard.role}: <span className="fw-semibold">{roleLabel(role)}</span>
         </div>
       </aside>
 
@@ -68,15 +76,15 @@ export default function DashboardLayout() {
                 className="btn btn-outline-secondary d-lg-none"
                 onClick={() => setSidebarOpen((v) => !v)}
               >
-                Menu
+                {sq.dashboard.menu}
               </button>
-              <div className="fw-semibold">Dashboard</div>
+              <div className="fw-semibold">{sq.dashboard.title}</div>
             </div>
 
             <div className="d-flex align-items-center gap-3">
               <div className="text-end">
-                <div className="fw-semibold">{displayName || 'User'}</div>
-                <div className="small text-secondary">{role || ''}</div>
+                <div className="fw-semibold">{displayName || sq.dashboard.userFallback}</div>
+                <div className="small text-secondary">{roleLabel(role)}</div>
               </div>
               <button
                 type="button"
@@ -86,7 +94,7 @@ export default function DashboardLayout() {
                   navigate('/login');
                 }}
               >
-                Logout
+                {sq.dashboard.logout}
               </button>
             </div>
           </div>

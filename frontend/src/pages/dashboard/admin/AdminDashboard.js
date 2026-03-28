@@ -3,6 +3,7 @@ import InlineAlert from '../../../components/common/InlineAlert';
 import SimpleBarChart from '../../../components/charts/SimpleBarChart';
 import { getApiErrorMessage } from '../../../services/api';
 import { useAdminService } from '../../../hooks/useAdminService';
+import sq from '../../../i18n/sq';
 
 export default function AdminDashboard() {
   const adminApi = useAdminService();
@@ -40,10 +41,10 @@ export default function AdminDashboard() {
 
   const trendLabel =
     analytics?.trend === 'increasing'
-      ? 'Trend: increasing'
+      ? sq.admin.trendUp
       : analytics?.trend === 'decreasing'
-        ? 'Trend: decreasing'
-        : 'Trend: flat';
+        ? sq.admin.trendDown
+        : sq.admin.trendFlat;
 
   const TrendBadge = () => {
     const c =
@@ -56,7 +57,7 @@ export default function AdminDashboard() {
   };
 
   const onDelete = async (id) => {
-    if (!window.confirm('Delete this driving school and its owner account? This cannot be undone.')) {
+    if (!window.confirm(sq.admin.deleteConfirm)) {
       return;
     }
     setError('');
@@ -71,17 +72,15 @@ export default function AdminDashboard() {
   return (
     <div className="d-flex flex-column gap-3">
       <div className="dash-card p-4">
-        <div className="fw-semibold fs-5">Admin</div>
-        <div className="text-secondary small">
-          Driving schools registry and registration analytics.
-        </div>
+        <div className="fw-semibold fs-5">{sq.admin.title}</div>
+        <div className="text-secondary small">{sq.admin.subtitle}</div>
       </div>
 
-      {error ? <InlineAlert title="Request failed" message={error} /> : null}
+      {error ? <InlineAlert title={sq.admin.requestFailed} message={error} /> : null}
 
       <div className="dash-card p-4">
         <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <div className="fw-semibold">School registrations</div>
+          <div className="fw-semibold">{sq.admin.schoolsRegistered}</div>
           <div className="d-flex align-items-center gap-2">
             <select
               className="form-select form-select-sm"
@@ -89,15 +88,16 @@ export default function AdminDashboard() {
               value={granularity}
               onChange={(e) => setGranularity(e.target.value)}
             >
-              <option value="day">Per day</option>
-              <option value="week">Per week</option>
-              <option value="month">Per month</option>
+              <option value="day">{sq.admin.perDay}</option>
+              <option value="week">{sq.admin.perWeek}</option>
+              <option value="month">{sq.admin.perMonth}</option>
             </select>
             <TrendBadge />
           </div>
         </div>
         <div className="text-secondary small mt-1">
-          Total schools: {analytics?.total_schools ?? '—'} · {loading ? 'Loading chart…' : null}
+          {sq.admin.totalSchools}: {analytics?.total_schools ?? '—'} ·{' '}
+          {loading ? sq.admin.loadingChart : null}
         </div>
         <div className="mt-3">
           <SimpleBarChart data={chartData} title="" height={200} />
@@ -105,14 +105,14 @@ export default function AdminDashboard() {
       </div>
 
       <div className="dash-card p-3">
-        <div className="fw-semibold mb-3">Registered driving schools</div>
+        <div className="fw-semibold mb-3">{sq.admin.schoolsList}</div>
         <div className="table-responsive">
           <table className="table align-middle">
             <thead>
               <tr className="text-secondary small">
-                <th>School</th>
-                <th>Owner</th>
-                <th>Business #</th>
+                <th>{sq.admin.colSchool}</th>
+                <th>{sq.admin.colOwner}</th>
+                <th>{sq.admin.colBusiness}</th>
                 <th style={{ width: 100 }} />
               </tr>
             </thead>
@@ -120,13 +120,13 @@ export default function AdminDashboard() {
               {loading ? (
                 <tr>
                   <td colSpan={4} className="text-center text-secondary py-4">
-                    Loading…
+                    {sq.admin.loading}
                   </td>
                 </tr>
               ) : schools.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="text-center text-secondary py-4">
-                    No schools yet.
+                    {sq.admin.empty}
                   </td>
                 </tr>
               ) : (
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
                         className="btn btn-sm btn-outline-danger"
                         onClick={() => onDelete(s.id)}
                       >
-                        Delete
+                        {sq.admin.delete}
                       </button>
                     </td>
                   </tr>

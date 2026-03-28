@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getApiErrorMessage } from '../services/api';
 import '../Form.css';
+import sq from '../i18n/sq';
 
 export default function ChangePasswordPage() {
   const { isAuthenticated, mustChangePassword, authService, setAuth, user, token } = useAuth();
@@ -49,10 +50,8 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="form-container">
-      <h2>Ndrysho fjalëkalimin</h2>
-      <p className="text-secondary small mb-3">
-        Për arsye sigurie, duhet të vendosni një fjalëkalim të ri para se të vazhdoni.
-      </p>
+      <h2>{sq.auth.changePasswordTitle}</h2>
+      <p className="text-secondary small mb-3">{sq.auth.changePasswordHint}</p>
       <form onSubmit={onSubmit}>
         {error ? (
           <div className="alert alert-danger text-start" role="alert">
@@ -61,20 +60,20 @@ export default function ChangePasswordPage() {
         ) : null}
         <input
           type="password"
-          placeholder="Fjalëkalimi i ri"
+          placeholder={sq.auth.passwordNew}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
         />
         <input
           type="password"
-          placeholder="Konfirmoni fjalëkalimin"
+          placeholder={sq.auth.passwordConfirm}
           value={passwordConfirmation}
           onChange={(e) => setPasswordConfirmation(e.target.value)}
           autoComplete="new-password"
         />
         <button type="submit" disabled={loading}>
-          {loading ? 'Duke ruajtur…' : 'Ruaj'}
+          {loading ? sq.auth.loadingSave : sq.auth.submitSave}
         </button>
       </form>
     </div>

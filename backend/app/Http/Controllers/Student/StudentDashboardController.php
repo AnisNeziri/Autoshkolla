@@ -21,7 +21,7 @@ class StudentDashboardController extends Controller
         $student = $user->studentProfile;
         if (! $student) {
             return response()->json([
-                'message' => 'No student profile linked to this account.',
+                'message' => 'Nuk ka profil studenti të lidhur me këtë llogari.',
             ], 404);
         }
 

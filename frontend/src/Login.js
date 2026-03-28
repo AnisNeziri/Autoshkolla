@@ -3,6 +3,7 @@ import './Form.css';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { getApiErrorMessage } from './services/api';
+import sq from './i18n/sq';
 
 function Login() {
   const { authService, setAuth } = useAuth();
@@ -21,11 +22,11 @@ function Login() {
     setError('');
 
     if (!emailOrCode.trim()) {
-      setError('Ju lutem shkruani email-in.');
+      setError(sq.auth.errors.emailRequired);
       return;
     }
     if (!password) {
-      setError('Ju lutem shkruani fjalëkalimin.');
+      setError(sq.auth.errors.passwordRequired);
       return;
     }
 
@@ -47,7 +48,7 @@ function Login() {
 
   return (
     <div className="form-container">
-      <h2>Hyr në Llogari</h2>
+      <h2>{sq.auth.loginTitle}</h2>
       <form onSubmit={onSubmit}>
         {error ? (
           <div className="alert alert-danger text-start" role="alert">
@@ -56,24 +57,24 @@ function Login() {
         ) : null}
         <input
           type="text"
-          placeholder="Email"
+          placeholder={sq.auth.email}
           value={emailOrCode}
           onChange={(e) => setEmailOrCode(e.target.value)}
           autoComplete="username"
         />
         <input
           type="password"
-          placeholder="Fjalëkalimi"
+          placeholder={sq.auth.password}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
         />
         <button type="submit" disabled={loading}>
-          {loading ? 'Duke hyrë…' : 'Hyr'}
+          {loading ? sq.auth.loadingLogin : sq.auth.submitLogin}
         </button>
       </form>
       <p className="mt-3 small text-secondary mb-0">
-        Nuk keni llogari? <Link to="/register">Regjistro autoshkollën</Link>
+        {sq.auth.noAccount} <Link to="/register">{sq.auth.linkRegister}</Link>
       </p>
     </div>
   );

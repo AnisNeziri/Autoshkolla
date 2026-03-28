@@ -83,7 +83,8 @@ class StudentController extends Controller
         return response()->json([
             'student' => $this->transformStudentDetail($studentRow),
             'generated_password' => $plainPassword,
-            'message' => 'Student created. Share the temporary password; they must change it after login.',
+            'message' =>
+                'Studenti u krijua. Ndani fjalëkalimin e përkohshëm; studenti duhet ta ndryshojë pas hyrjes.',
         ], 201);
     }
 
@@ -119,7 +120,7 @@ class StudentController extends Controller
 
         if (! $student) {
             throw ValidationException::withMessages([
-                'student' => ['Student not found or not assigned to you.'],
+                'student' => ['Studenti nuk u gjet ose nuk ju është caktuar.'],
             ]);
         }
 

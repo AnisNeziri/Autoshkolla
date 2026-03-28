@@ -37,7 +37,7 @@ function extractAuth(data) {
     null;
   const user = data?.user || null;
   if (!token) {
-    throw new Error('Login succeeded but no token was returned by the API.');
+    throw new Error('Hyrja suksedoi por API nuk ktheu token.');
   }
   return { token, user, raw: data };
 }

@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -17,14 +19,17 @@ class AuthController extends Controller
             'school_name' => ['required', 'string', 'max:100'],
             'owners_name' => ['required', 'string', 'max:50'],
             'owners_surname' => ['required', 'string', 'max:50'],
-            'numri_biz' => ['required', 'string', 'max:20', 'unique:autoschool,numri_biz'],
-            'invitation_code' => ['required', 'string', 'max:20', 'unique:autoschool,invitation_code'],
+            'numri_biz' => ['nullable', 'string', 'max:20', Rule::unique('autoschool', 'numri_biz')],
+            'invitation_code' => ['nullable', 'string', 'max:20', Rule::unique('autoschool', 'invitation_code')],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'owner_display_name' => ['nullable', 'string', 'max:191'],
         ]);
 
-        $user = DB::transaction(function () use ($data) {
+        $numriBiz = ! empty($data['numri_biz']) ? $data['numri_biz'] : $this->uniqueAutoschoolValue('numri_biz');
+        $invitationCode = ! empty($data['invitation_code']) ? $data['invitation_code'] : $this->uniqueAutoschoolValue('invitation_code');
+
+        $user = DB::transaction(function () use ($data, $numriBiz, $invitationCode) {
             $displayName = $data['owner_display_name']
                 ?? trim($data['owners_name'].' '.$data['owners_surname']);
 
@@ -40,8 +45,8 @@ class AuthController extends Controller
                 'name' => $data['school_name'],
                 'owners_name' => $data['owners_name'],
                 'owners_surname' => $data['owners_surname'],
-                'numri_biz' => $data['numri_biz'],
-                'invitation_code' => $data['invitation_code'],
+                'numri_biz' => $numriBiz,
+                'invitation_code' => $invitationCode,
                 'user_id' => $user->id,
                 'created_at' => now(),
             ]);
@@ -71,7 +76,7 @@ class AuthController extends Controller
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Invalid credentials.'],
+                'email' => ['Kredencialet janë të pasakta.'],
             ]);
         }
 
@@ -93,7 +98,7 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()?->delete();
 
-        return response()->json(['message' => 'Logged out']);
+        return response()->json(['message' => 'U dolët me sukses.']);
     }
 
     public function changePassword(Request $request)
@@ -109,7 +114,7 @@ class AuthController extends Controller
         $user->save();
 
         return response()->json([
-            'message' => 'Password updated',
+            'message' => 'Fjalëkalimi u përditësua.',
             'user' => $this->userPayload($user->fresh()),
         ]);
     }
@@ -128,5 +133,20 @@ class AuthController extends Controller
             'must_change_password' => (bool) $user->must_change_password,
             'autoschool_id' => $user->autoschool_id,
         ];
+    }
+
+    /**
+     * Generate a unique value for autoschool.numri_biz or autoschool.invitation_code (max 20 chars).
+     */
+    private function uniqueAutoschoolValue(string $column): string
+    {
+        do {
+            $value = strtoupper(Str::random(12));
+            if (strlen($value) > 20) {
+                $value = substr($value, 0, 20);
+            }
+        } while (Autoschool::query()->where($column, $value)->exists());
+
+        return $value;
     }
 }
