@@ -4,84 +4,170 @@ import InlineAlert from '../../../components/common/InlineAlert';
 import ProgressBar from '../../../components/common/ProgressBar';
 import { getApiErrorMessage } from '../../../services/api';
 import { useProfessorService } from '../../../hooks/useProfessorService';
-import { calculateStudentProgress } from '../../../utils/progress';
-
-function getStudentName(s) {
-  const name = s?.name ?? s?.firstName ?? s?.first_name ?? '';
-  const surname = s?.surname ?? s?.lastName ?? s?.last_name ?? '';
-  const full = `${name} ${surname}`.trim();
-  return full || s?.fullName || s?.full_name || 'Student';
-}
 
 export default function ProfessorStudentsPage() {
   const professorApi = useProfessorService();
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState([]);
   const [error, setError] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [form, setForm] = useState({
+    name: '',
+    surname: '',
+    email: '',
+    theoretical_group: '',
+  });
+
+  const load = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await professorApi.getStudents();
+      setStudents(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setError(getApiErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await professorApi.getStudents();
-        if (!alive) return;
-        setStudents(Array.isArray(data) ? data : data?.data || []);
-      } catch (e) {
-        if (!alive) return;
-        setError(getApiErrorMessage(e));
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [professorApi]);
+    load();
+  }, []);
 
-  const rows = useMemo(() => {
-    const list = Array.isArray(students) ? students : [];
-    return list.map((s) => {
-      const lecturesCompleted = s?.lecturesCompleted ?? s?.lectures_completed ?? 0;
-      const drivingCompleted = s?.drivingCompleted ?? s?.driving_completed ?? 0;
-      const writtenTestPassed = Boolean(s?.writtenTestPassed ?? s?.written_test_passed ?? false);
-      const drivingTestDate = s?.drivingTestDate ?? s?.driving_test_date ?? null;
-      const progress = calculateStudentProgress({
-        lecturesCompleted,
-        drivingCompleted,
-        drivingTotal: s?.drivingTotal ?? s?.driving_total ?? null,
-        writtenTestPassed,
-        drivingTestScheduled: Boolean(drivingTestDate),
+  const rows = useMemo(
+    () =>
+      students.map((r) => ({
+        ...r,
+        progressFraction: (Number(r.progress_percent) || 0) / 100,
+      })),
+    [students]
+  );
+
+  const createStudent = async (e) => {
+    e.preventDefault();
+    if (!form.name?.trim() || !form.surname?.trim() || !form.email?.trim()) {
+      setError('Name, surname, and email are required.');
+      return;
+    }
+    setCreateLoading(true);
+    setError('');
+    setGeneratedPassword('');
+    try {
+      const res = await professorApi.createStudent({
+        name: form.name.trim(),
+        surname: form.surname.trim(),
+        email: form.email.trim(),
+        theoretical_group: form.theoretical_group.trim() || undefined,
       });
-
-      return {
-        id: s?.id ?? s?.studentId ?? s?.student_id,
-        name: getStudentName(s),
-        lecturesCompleted,
-        drivingCompleted,
-        writtenTestPassed,
-        drivingTestDate,
-        progress,
-      };
-    });
-  }, [students]);
+      setGeneratedPassword(res?.generated_password || '');
+      setForm({ name: '', surname: '', email: '', theoretical_group: '' });
+      await load();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setCreateLoading(false);
+    }
+  };
 
   return (
     <div className="d-flex flex-column gap-3">
-      <div className="dash-card p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div className="dash-card p-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
           <div className="fw-semibold fs-5">Students</div>
           <div className="text-secondary small">
-            Only students assigned to the logged-in professor are visible here.
+            You only see candidates you created. Maximum 12 lectures and 20 driving sessions each.
           </div>
         </div>
-        <div className="text-secondary small">
-          {loading ? 'Loading…' : `${rows.length} student(s)`}
-        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setModalOpen(true)}>
+          + Create student
+        </button>
       </div>
 
-      {error ? <InlineAlert title="API error" message={error} /> : null}
+      {error ? <InlineAlert title="Error" message={error} /> : null}
+
+      {modalOpen && (
+        <div className="modal d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,.45)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">New student</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Close"
+                  onClick={() => {
+                    setModalOpen(false);
+                    setGeneratedPassword('');
+                  }}
+                />
+              </div>
+              <form onSubmit={createStudent}>
+                <div className="modal-body">
+                  <div className="row g-2">
+                    <div className="col-6">
+                      <label className="form-label small">Name</label>
+                      <input
+                        className="form-control"
+                        value={form.name}
+                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small">Surname</label>
+                      <input
+                        className="form-control"
+                        value={form.surname}
+                        onChange={(e) => setForm((f) => ({ ...f, surname: e.target.value }))}
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small">Email (login)</label>
+                      <input
+                        type="email"
+                        className="form-control"
+                        value={form.email}
+                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small">Theoretical group</label>
+                      <input
+                        className="form-control"
+                        value={form.theoretical_group}
+                        onChange={(e) => setForm((f) => ({ ...f, theoretical_group: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  {generatedPassword ? (
+                    <div className="alert alert-success mt-3 small mb-0">
+                      Temporary password: <strong>{generatedPassword}</strong>
+                      <div className="mt-1">Student must change password on first login.</div>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => {
+                      setModalOpen(false);
+                      setGeneratedPassword('');
+                    }}
+                  >
+                    Close
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={createLoading}>
+                    {createLoading ? 'Creating…' : 'Create'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="dash-card p-3">
         <div className="table-responsive">
@@ -89,67 +175,59 @@ export default function ProfessorStudentsPage() {
             <thead>
               <tr className="text-secondary small">
                 <th>Student</th>
-                <th>Lectures (attendance)</th>
-                <th>Driving sessions</th>
-                <th>Written test</th>
-                <th>Driving test date</th>
-                <th style={{ width: 220 }}>Progress</th>
+                <th>Group</th>
+                <th>Lectures</th>
+                <th>Driving</th>
+                <th>Written</th>
+                <th>Driving test</th>
+                <th style={{ width: 200 }}>Progress</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-4 text-center text-secondary">
-                    Loading students…
+                  <td colSpan={7} className="text-center text-secondary py-4">
+                    Loading…
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-4 text-center text-secondary">
-                    No assigned students found.
+                  <td colSpan={7} className="text-center text-secondary py-4">
+                    No students yet. Create one to get started.
                   </td>
                 </tr>
               ) : (
                 rows.map((r) => (
-                  <tr key={r.id ?? r.name}>
+                  <tr key={r.id}>
                     <td className="fw-semibold">
-                      {r.id ? (
-                        <Link to={`/dashboard/professor/students/${r.id}`} className="text-decoration-none">
-                          {r.name}
-                        </Link>
-                      ) : (
-                        r.name
-                      )}
-                      {!r.id ? (
-                        <div className="text-danger small mt-1">
-                          Missing `id` from API response.
-                        </div>
-                      ) : null}
+                      <Link to={`/dashboard/professor/students/${r.id}`} className="text-decoration-none">
+                        {r.name} {r.surname}
+                      </Link>
+                      <div className="small text-secondary">{r.email}</div>
                     </td>
                     <td>
-                      <span className="badge text-bg-light">
-                        {Number(r.lecturesCompleted)}/12
+                      <span className="badge text-bg-light">{r.theoretical_group || '—'}</span>
+                    </td>
+                    <td>
+                      {r.lectures_present ?? 0}/{r.lectures_count ?? 0}
+                    </td>
+                    <td>
+                      {r.driving_sessions_completed ?? 0}/{r.driving_sessions_count ?? 0}
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${r.written_test_passed ? 'text-bg-success' : 'text-bg-secondary'}`}
+                      >
+                        {r.written_test_passed ? 'Passed' : 'Not passed'}
                       </span>
                     </td>
-                    <td>
-                      <span className="badge text-bg-light">{Number(r.drivingCompleted)}</span>
-                    </td>
-                    <td>
-                      <span className={`badge ${r.writtenTestPassed ? 'text-bg-success' : 'text-bg-secondary'}`}>
-                        {r.writtenTestPassed ? 'Passed' : 'Not Passed'}
-                      </span>
-                    </td>
-                    <td className="text-secondary">
-                      {r.drivingTestDate ? String(r.drivingTestDate) : '—'}
-                    </td>
+                    <td className="text-secondary small">{r.driving_test_date || '—'}</td>
                     <td>
                       <div className="d-flex align-items-center gap-2">
                         <div className="flex-grow-1">
-                          <ProgressBar value={r.progress} />
+                          <ProgressBar value={r.progressFraction} />
                         </div>
-                        <div className="small text-secondary" style={{ width: 44, textAlign: 'right' }}>
-                          {Math.round(r.progress * 100)}%
-                        </div>
+                        <span className="small text-secondary">{r.progress_percent ?? 0}%</span>
                       </div>
                     </td>
                   </tr>
@@ -162,4 +240,3 @@ export default function ProfessorStudentsPage() {
     </div>
   );
 }
-

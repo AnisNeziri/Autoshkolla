@@ -1,91 +1,59 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import InlineAlert from '../../../components/common/InlineAlert';
 import ProgressBar from '../../../components/common/ProgressBar';
 import { getApiErrorMessage } from '../../../services/api';
 import { useProfessorService } from '../../../hooks/useProfessorService';
-import { calculateStudentProgress } from '../../../utils/progress';
-
-function normalizeBool(v) {
-  if (typeof v === 'boolean') return v;
-  if (typeof v === 'number') return v === 1;
-  if (typeof v === 'string') return ['1', 'true', 'yes', 'present', 'passed', 'completed'].includes(v.toLowerCase());
-  return false;
-}
 
 export default function ProfessorStudentDetailsPage() {
   const { studentId } = useParams();
   const professorApi = useProfessorService();
 
   const [loading, setLoading] = useState(true);
-  const [student, setStudent] = useState(null);
-  const [lectures, setLectures] = useState([]);
-  const [sessions, setSessions] = useState([]);
+  const [detail, setDetail] = useState(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [lectureForm, setLectureForm] = useState({ date: '', time: '', present: true });
   const [sessionForm, setSessionForm] = useState({ date: '', time: '', completed: false });
-  const [writtenTestPassed, setWrittenTestPassed] = useState(false);
+  const [writtenPassed, setWrittenPassed] = useState(false);
   const [drivingTestDate, setDrivingTestDate] = useState('');
+  const [theoreticalGroup, setTheoreticalGroup] = useState('');
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const [s, l, ds] = await Promise.all([
-        professorApi.getStudent(studentId),
-        professorApi.getLectures(studentId),
-        professorApi.getDrivingSessions(studentId),
-      ]);
-      setStudent(s || null);
-      setLectures(Array.isArray(l) ? l : l?.data || []);
-      setSessions(Array.isArray(ds) ? ds : ds?.data || []);
-
-      const wt = s?.writtenTestPassed ?? s?.written_test_passed ?? s?.writtenTest ?? s?.written_test ?? false;
-      setWrittenTestPassed(normalizeBool(wt));
-      const dtd = s?.drivingTestDate ?? s?.driving_test_date ?? '';
-      setDrivingTestDate(dtd ? String(dtd) : '');
+      const s = await professorApi.getStudent(studentId);
+      setDetail(s);
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
       setLoading(false);
     }
-  };
+  }, [professorApi, studentId]);
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId]);
+  }, [refresh]);
 
-  const lectureStats = useMemo(() => {
-    const list = Array.isArray(lectures) ? lectures : [];
-    const presentCount = list.filter((x) => normalizeBool(x?.present ?? x?.attendance ?? x?.is_present)).length;
-    return { total: list.length, presentCount };
-  }, [lectures]);
+  useEffect(() => {
+    if (!detail) return;
+    setWrittenPassed(Boolean(detail.written_exam?.passed));
+    setDrivingTestDate(detail.practical_exam?.exam_date || '');
+    setTheoreticalGroup(detail.theoretical_group || '');
+  }, [detail]);
 
-  const drivingStats = useMemo(() => {
-    const list = Array.isArray(sessions) ? sessions : [];
-    const completedCount = list.filter((x) => normalizeBool(x?.completed ?? x?.is_completed)).length;
-    return { total: list.length, completedCount };
-  }, [sessions]);
-
-  const progress = useMemo(() => {
-    return calculateStudentProgress({
-      lecturesCompleted: lectureStats.total,
-      drivingCompleted: drivingStats.completedCount,
-      drivingTotal: student?.drivingTotal ?? student?.driving_total ?? null,
-      writtenTestPassed,
-      drivingTestScheduled: Boolean(drivingTestDate),
-    });
-  }, [lectureStats.total, drivingStats.completedCount, student, writtenTestPassed, drivingTestDate]);
+  const progressFraction = useMemo(() => {
+    const p = detail?.progress?.progress_percent;
+    if (typeof p === 'number') return p / 100;
+    return 0;
+  }, [detail]);
 
   const studentName = useMemo(() => {
-    if (!student) return `Student #${studentId}`;
-    const name = student?.name ?? student?.firstName ?? student?.first_name ?? '';
-    const surname = student?.surname ?? student?.lastName ?? student?.last_name ?? '';
-    return `${name} ${surname}`.trim() || student?.fullName || student?.full_name || `Student #${studentId}`;
-  }, [student, studentId]);
+    if (!detail) return `Student #${studentId}`;
+    return `${detail.name || ''} ${detail.surname || ''}`.trim() || `Student #${studentId}`;
+  }, [detail, studentId]);
 
   const addLecture = async (e) => {
     e.preventDefault();
@@ -93,14 +61,14 @@ export default function ProfessorStudentDetailsPage() {
       setError('Please select lecture date and time.');
       return;
     }
+    if ((detail?.lectures?.length || 0) >= 12) {
+      setError('Maximum of 12 lectures.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
-      await professorApi.addLecture(studentId, {
-        date: lectureForm.date,
-        time: lectureForm.time,
-        present: lectureForm.present,
-      });
+      await professorApi.addLecture(studentId, lectureForm);
       setLectureForm({ date: '', time: '', present: true });
       await refresh();
     } catch (err) {
@@ -116,14 +84,14 @@ export default function ProfessorStudentDetailsPage() {
       setError('Please select driving session date and time.');
       return;
     }
+    if ((detail?.driving_sessions?.length || 0) >= 20) {
+      setError('Maximum of 20 driving sessions.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
-      await professorApi.addDrivingSession(studentId, {
-        date: sessionForm.date,
-        time: sessionForm.time,
-        completed: sessionForm.completed,
-      });
+      await professorApi.addDrivingSession(studentId, sessionForm);
       setSessionForm({ date: '', time: '', completed: false });
       await refresh();
     } catch (err) {
@@ -133,14 +101,48 @@ export default function ProfessorStudentDetailsPage() {
     }
   };
 
+  const saveGroup = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await professorApi.updateStudent(studentId, { theoretical_group: theoreticalGroup || null });
+      await refresh();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleLecturePresent = async (lectureId, nextPresent) => {
+    try {
+      await professorApi.updateLecture(studentId, lectureId, { present: nextPresent });
+      await refresh();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  const toggleSessionDone = async (sessionId, next) => {
+    try {
+      await professorApi.updateDrivingSession(studentId, sessionId, { completed: next });
+      await refresh();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
   const saveTests = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError('');
     try {
-      await professorApi.updateWrittenTest(studentId, { passed: writtenTestPassed });
-      if (writtenTestPassed && drivingTestDate) {
-        await professorApi.scheduleDrivingTest(studentId, { examDate: drivingTestDate });
+      await professorApi.updateWrittenExam(studentId, {
+        passed: writtenPassed,
+        exam_date: detail?.written_exam?.exam_date || new Date().toISOString().slice(0, 10),
+      });
+      if (writtenPassed && drivingTestDate) {
+        await professorApi.updatePracticalExam(studentId, { exam_date: drivingTestDate });
       }
       await refresh();
     } catch (err) {
@@ -149,6 +151,9 @@ export default function ProfessorStudentDetailsPage() {
       setSaving(false);
     }
   };
+
+  const lectures = detail?.lectures || [];
+  const sessions = detail?.driving_sessions || [];
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -161,19 +166,34 @@ export default function ProfessorStudentDetailsPage() {
               </Link>
             </div>
             <div className="fw-semibold fs-5 mt-1">{studentName}</div>
+            <div className="small text-secondary">{detail?.email}</div>
           </div>
           <div style={{ minWidth: 260 }}>
             <div className="d-flex align-items-center gap-2">
               <div className="flex-grow-1">
-                <ProgressBar value={progress} />
+                <ProgressBar value={progressFraction} />
               </div>
               <div className="small text-secondary" style={{ width: 52, textAlign: 'right' }}>
-                {Math.round(progress * 100)}%
+                {detail?.progress?.progress_percent ?? 0}%
               </div>
             </div>
-            <div className="small text-secondary mt-1">
-              Lectures 40% • Driving 40% • Written 10% • Practical 10%
-            </div>
+          </div>
+        </div>
+
+        <div className="row g-2 mt-3 align-items-end">
+          <div className="col-md-6">
+            <label className="form-label small">Theoretical group</label>
+            <input
+              className="form-control"
+              value={theoreticalGroup}
+              onChange={(e) => setTheoreticalGroup(e.target.value)}
+              placeholder="Group name"
+            />
+          </div>
+          <div className="col-md-6">
+            <button type="button" className="btn btn-outline-primary" disabled={saving} onClick={saveGroup}>
+              Save group
+            </button>
           </div>
         </div>
       </div>
@@ -183,20 +203,13 @@ export default function ProfessorStudentDetailsPage() {
       <div className="row g-3">
         <div className="col-12 col-lg-6">
           <div className="dash-card p-4">
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <div className="fw-semibold">Lectures</div>
-                <div className="text-secondary small">Total required: 12</div>
-              </div>
-              <div className="text-secondary small">
-                {loading ? '—' : `${lectureStats.total}/12 recorded`}
-              </div>
+            <div className="d-flex justify-content-between">
+              <div className="fw-semibold">Lectures</div>
+              <span className="badge text-bg-light">{lectures.length}/12</span>
             </div>
-
             <hr />
-
             <form className="row g-2" onSubmit={addLecture}>
-              <div className="col-12 col-md-4">
+              <div className="col-6">
                 <label className="form-label small">Date</label>
                 <input
                   type="date"
@@ -205,7 +218,7 @@ export default function ProfessorStudentDetailsPage() {
                   onChange={(e) => setLectureForm((s) => ({ ...s, date: e.target.value }))}
                 />
               </div>
-              <div className="col-12 col-md-4">
+              <div className="col-6">
                 <label className="form-label small">Time</label>
                 <input
                   type="time"
@@ -214,8 +227,7 @@ export default function ProfessorStudentDetailsPage() {
                   onChange={(e) => setLectureForm((s) => ({ ...s, time: e.target.value }))}
                 />
               </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small">Attendance</label>
+              <div className="col-12">
                 <select
                   className="form-select"
                   value={lectureForm.present ? 'present' : 'absent'}
@@ -227,15 +239,14 @@ export default function ProfessorStudentDetailsPage() {
                   <option value="absent">Absent</option>
                 </select>
               </div>
-              <div className="col-12 d-flex justify-content-end">
-                <button type="submit" className="btn btn-primary" disabled={saving}>
+              <div className="col-12 text-end">
+                <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
                   Add lecture
                 </button>
               </div>
             </form>
-
-            <div className="mt-3 table-responsive">
-              <table className="table table-sm align-middle mb-0">
+            <div className="table-responsive mt-3">
+              <table className="table table-sm">
                 <thead>
                   <tr className="text-secondary small">
                     <th>Date</th>
@@ -246,33 +257,21 @@ export default function ProfessorStudentDetailsPage() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={3} className="py-3 text-center text-secondary">
-                        Loading…
-                      </td>
-                    </tr>
-                  ) : lectures.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="py-3 text-center text-secondary">
-                        No lectures recorded yet.
-                      </td>
+                      <td colSpan={3}>Loading…</td>
                     </tr>
                   ) : (
                     lectures.map((l) => (
-                      <tr key={l?.id ?? `${l?.date}-${l?.time}`}>
-                        <td>{String(l?.date ?? l?.lecture_date ?? '—')}</td>
-                        <td>{String(l?.time ?? l?.lecture_time ?? '—')}</td>
+                      <tr key={l.id}>
+                        <td>{l.date}</td>
+                        <td>{l.time}</td>
                         <td>
-                          <span
-                            className={`badge ${
-                              normalizeBool(l?.present ?? l?.attendance ?? l?.is_present)
-                                ? 'text-bg-success'
-                                : 'text-bg-secondary'
-                            }`}
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${l.present ? 'btn-success' : 'btn-outline-secondary'}`}
+                            onClick={() => toggleLecturePresent(l.id, !l.present)}
                           >
-                            {normalizeBool(l?.present ?? l?.attendance ?? l?.is_present)
-                              ? 'Present'
-                              : 'Absent'}
-                          </span>
+                            {l.present ? 'Present' : 'Absent'}
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -285,20 +284,13 @@ export default function ProfessorStudentDetailsPage() {
 
         <div className="col-12 col-lg-6">
           <div className="dash-card p-4">
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <div className="fw-semibold">Driving sessions</div>
-                <div className="text-secondary small">Min 5 days, max 20 days</div>
-              </div>
-              <div className="text-secondary small">
-                {loading ? '—' : `${drivingStats.completedCount}/${drivingStats.total} completed`}
-              </div>
+            <div className="d-flex justify-content-between">
+              <div className="fw-semibold">Driving sessions</div>
+              <span className="badge text-bg-light">{sessions.length}/20</span>
             </div>
-
             <hr />
-
             <form className="row g-2" onSubmit={addSession}>
-              <div className="col-12 col-md-4">
+              <div className="col-6">
                 <label className="form-label small">Date</label>
                 <input
                   type="date"
@@ -307,7 +299,7 @@ export default function ProfessorStudentDetailsPage() {
                   onChange={(e) => setSessionForm((s) => ({ ...s, date: e.target.value }))}
                 />
               </div>
-              <div className="col-12 col-md-4">
+              <div className="col-6">
                 <label className="form-label small">Time</label>
                 <input
                   type="time"
@@ -316,28 +308,14 @@ export default function ProfessorStudentDetailsPage() {
                   onChange={(e) => setSessionForm((s) => ({ ...s, time: e.target.value }))}
                 />
               </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small">Status</label>
-                <select
-                  className="form-select"
-                  value={sessionForm.completed ? 'completed' : 'scheduled'}
-                  onChange={(e) =>
-                    setSessionForm((s) => ({ ...s, completed: e.target.value === 'completed' }))
-                  }
-                >
-                  <option value="scheduled">Scheduled</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-              <div className="col-12 d-flex justify-content-end">
-                <button type="submit" className="btn btn-primary" disabled={saving}>
+              <div className="col-12 text-end">
+                <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
                   Add session
                 </button>
               </div>
             </form>
-
-            <div className="mt-3 table-responsive">
-              <table className="table table-sm align-middle mb-0">
+            <div className="table-responsive mt-3">
+              <table className="table table-sm">
                 <thead>
                   <tr className="text-secondary small">
                     <th>Date</th>
@@ -348,31 +326,21 @@ export default function ProfessorStudentDetailsPage() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={3} className="py-3 text-center text-secondary">
-                        Loading…
-                      </td>
-                    </tr>
-                  ) : sessions.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="py-3 text-center text-secondary">
-                        No driving sessions scheduled yet.
-                      </td>
+                      <td colSpan={3}>Loading…</td>
                     </tr>
                   ) : (
-                    sessions.map((s) => (
-                      <tr key={s?.id ?? `${s?.date}-${s?.time}`}>
-                        <td>{String(s?.date ?? s?.session_date ?? '—')}</td>
-                        <td>{String(s?.time ?? s?.session_time ?? '—')}</td>
+                    sessions.map((d) => (
+                      <tr key={d.id}>
+                        <td>{d.date}</td>
+                        <td>{d.time}</td>
                         <td>
-                          <span
-                            className={`badge ${
-                              normalizeBool(s?.completed ?? s?.is_completed)
-                                ? 'text-bg-success'
-                                : 'text-bg-secondary'
-                            }`}
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${d.completed ? 'btn-success' : 'btn-outline-secondary'}`}
+                            onClick={() => toggleSessionDone(d.id, !d.completed)}
                           >
-                            {normalizeBool(s?.completed ?? s?.is_completed) ? 'Completed' : 'Scheduled'}
-                          </span>
+                            {d.completed ? 'Completed' : 'Scheduled'}
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -385,43 +353,32 @@ export default function ProfessorStudentDetailsPage() {
       </div>
 
       <div className="dash-card p-4">
-        <div className="fw-semibold">Tests</div>
-        <div className="text-secondary small mt-1">
-          Driving test scheduling becomes available after written test is completed.
-        </div>
-
-        <hr />
-
-        <form className="row g-3 align-items-end" onSubmit={saveTests}>
-          <div className="col-12 col-md-4">
-            <label className="form-label small">Written test</label>
+        <div className="fw-semibold">Exams</div>
+        <form className="row g-3 mt-1 align-items-end" onSubmit={saveTests}>
+          <div className="col-md-4">
+            <label className="form-label small">Written test passed</label>
             <select
               className="form-select"
-              value={writtenTestPassed ? 'passed' : 'not_passed'}
-              onChange={(e) => setWrittenTestPassed(e.target.value === 'passed')}
+              value={writtenPassed ? 'yes' : 'no'}
+              onChange={(e) => setWrittenPassed(e.target.value === 'yes')}
             >
-              <option value="not_passed">Not Completed / Not Passed</option>
-              <option value="passed">Completed / Passed</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
             </select>
           </div>
-
-          <div className="col-12 col-md-4">
+          <div className="col-md-4">
             <label className="form-label small">Driving test date</label>
             <input
               type="date"
               className="form-control"
               value={drivingTestDate}
               onChange={(e) => setDrivingTestDate(e.target.value)}
-              disabled={!writtenTestPassed}
+              disabled={!writtenPassed}
             />
-            {!writtenTestPassed ? (
-              <div className="small text-secondary mt-1">Enable by marking written test as passed.</div>
-            ) : null}
           </div>
-
-          <div className="col-12 col-md-4 d-flex justify-content-md-end">
+          <div className="col-md-4 text-md-end">
             <button type="submit" className="btn btn-success" disabled={saving}>
-              Save tests
+              Save exams
             </button>
           </div>
         </form>
@@ -429,4 +386,3 @@ export default function ProfessorStudentDetailsPage() {
     </div>
   );
 }
-

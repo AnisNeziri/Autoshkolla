@@ -4,61 +4,70 @@ export function createProfessorService({ getToken }) {
   const api = createApiClient({ getToken });
 
   return {
-    async getStudents() {
-      const res = await api.get('/professor/students');
-      return res?.data || [];
+    getStudents() {
+      return api.get('/professor/students').then((r) => r?.data || []);
     },
 
-    async getStudent(studentId) {
-      const res = await api.get(`/professor/students/${studentId}`);
-      return res?.data;
+    createStudent(payload) {
+      return api.post('/professor/students', payload).then((r) => r?.data);
     },
 
-    async getLectures(studentId) {
-      const res = await api.get(`/professor/students/${studentId}/lectures`);
-      return res?.data || [];
+    getStudent(studentId) {
+      return api.get(`/professor/students/${studentId}`).then((r) => r?.data);
     },
 
-    async addLecture(studentId, payload) {
-      const res = await api.post(`/professor/students/${studentId}/lectures`, payload);
-      return res?.data;
+    updateStudent(studentId, payload) {
+      return api.put(`/professor/students/${studentId}`, payload).then((r) => r?.data);
     },
 
-    async updateLecture(studentId, lectureId, payload) {
-      const res = await api.put(
-        `/professor/students/${studentId}/lectures/${lectureId}`,
-        payload
-      );
-      return res?.data;
+    addLecture(studentId, payload) {
+      return api
+        .post(`/professor/students/${studentId}/lectures`, {
+          date: payload.date,
+          time: payload.time,
+          present: payload.present ?? true,
+        })
+        .then((r) => r?.data);
     },
 
-    async getDrivingSessions(studentId) {
-      const res = await api.get(`/professor/students/${studentId}/driving-sessions`);
-      return res?.data || [];
+    updateLecture(studentId, lectureId, payload) {
+      return api
+        .put(`/professor/students/${studentId}/lectures/${lectureId}`, payload)
+        .then((r) => r?.data);
     },
 
-    async addDrivingSession(studentId, payload) {
-      const res = await api.post(`/professor/students/${studentId}/driving-sessions`, payload);
-      return res?.data;
+    addDrivingSession(studentId, payload) {
+      return api
+        .post(`/professor/students/${studentId}/driving-sessions`, {
+          date: payload.date,
+          time: payload.time,
+          completed: payload.completed ?? false,
+        })
+        .then((r) => r?.data);
     },
 
-    async updateDrivingSession(studentId, sessionId, payload) {
-      const res = await api.put(
-        `/professor/students/${studentId}/driving-sessions/${sessionId}`,
-        payload
-      );
-      return res?.data;
+    updateDrivingSession(studentId, sessionId, payload) {
+      return api
+        .put(`/professor/students/${studentId}/driving-sessions/${sessionId}`, payload)
+        .then((r) => r?.data);
     },
 
-    async updateWrittenTest(studentId, payload) {
-      const res = await api.put(`/professor/students/${studentId}/tests/written`, payload);
-      return res?.data;
+    updateWrittenExam(studentId, payload) {
+      return api
+        .put(`/professor/students/${studentId}/exams/written`, {
+          passed: payload.passed,
+          exam_date: payload.exam_date,
+        })
+        .then((r) => r?.data);
     },
 
-    async scheduleDrivingTest(studentId, payload) {
-      const res = await api.put(`/professor/students/${studentId}/tests/practical`, payload);
-      return res?.data;
+    updatePracticalExam(studentId, payload) {
+      return api
+        .put(`/professor/students/${studentId}/exams/practical`, {
+          exam_date: payload.exam_date,
+          passed: payload.passed ?? false,
+        })
+        .then((r) => r?.data);
     },
   };
 }
-

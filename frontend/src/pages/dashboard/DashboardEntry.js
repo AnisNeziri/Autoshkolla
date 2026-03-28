@@ -10,8 +10,8 @@ export default function DashboardEntry() {
   useEffect(() => {
     if (role === ROLES.PROFESSOR) navigate('/dashboard/professor', { replace: true });
     else if (role === ROLES.ADMIN) navigate('/dashboard/admin', { replace: true });
-    else if (role === ROLES.CANDIDATE) navigate('/dashboard/candidate', { replace: true });
-    else navigate('/dashboard/professor', { replace: true });
+    else if (role === ROLES.STUDENT) navigate('/dashboard/student', { replace: true });
+    else navigate('/login', { replace: true });
   }, [role, navigate]);
 
   return (
@@ -21,4 +21,3 @@ export default function DashboardEntry() {
     </div>
   );
 }
-

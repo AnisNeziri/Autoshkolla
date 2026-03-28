@@ -36,6 +36,13 @@ export function getApiErrorMessage(err) {
   const fallback = 'Diçka shkoi keq. Ju lutem provoni përsëri.';
   if (!err) return fallback;
 
+  const errors = err?.response?.data?.errors;
+  if (errors && typeof errors === 'object') {
+    const firstKey = Object.keys(errors)[0];
+    const firstMsg = firstKey && Array.isArray(errors[firstKey]) ? errors[firstKey][0] : null;
+    if (firstMsg) return firstMsg;
+  }
+
   const msg =
     err?.response?.data?.message ||
     err?.response?.data?.error ||

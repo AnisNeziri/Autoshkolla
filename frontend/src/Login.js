@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import './Form.css';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { getApiErrorMessage } from './services/api';
 
 function Login() {
-  const { authService, setToken } = useAuth();
+  const { authService, setAuth } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,7 +21,7 @@ function Login() {
     setError('');
 
     if (!emailOrCode.trim()) {
-      setError('Ju lutem shkruani email-in ose kodin referues.');
+      setError('Ju lutem shkruani email-in.');
       return;
     }
     if (!password) {
@@ -32,8 +32,12 @@ function Login() {
     setLoading(true);
     try {
       const res = await authService.login({ emailOrCode, password });
-      setToken(res.token);
-      navigate(from, { replace: true });
+      setAuth({ token: res.token, user: res.user });
+      if (res.user?.must_change_password) {
+        navigate('/change-password', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -52,7 +56,7 @@ function Login() {
         ) : null}
         <input
           type="text"
-          placeholder="Email ose Kodi Referues"
+          placeholder="Email"
           value={emailOrCode}
           onChange={(e) => setEmailOrCode(e.target.value)}
           autoComplete="username"
@@ -68,6 +72,9 @@ function Login() {
           {loading ? 'Duke hyrë…' : 'Hyr'}
         </button>
       </form>
+      <p className="mt-3 small text-secondary mb-0">
+        Nuk keni llogari? <Link to="/register">Regjistro autoshkollën</Link>
+      </p>
     </div>
   );
 }

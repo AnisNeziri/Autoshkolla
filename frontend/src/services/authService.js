@@ -4,28 +4,40 @@ export function createAuthService({ getToken }) {
   const api = createApiClient({ getToken });
 
   return {
+    async register(payload) {
+      const res = await api.post('/register', payload);
+      return extractAuth(res?.data);
+    },
+
     async login({ emailOrCode, password }) {
-      // Expect backend to return one of: { token }, { access_token }, { data: { token } }, { user, token }
       const res = await api.post('/login', { email: emailOrCode, password });
-      const token =
-        res?.data?.token ||
-        res?.data?.access_token ||
-        res?.data?.data?.token ||
-        res?.data?.data?.access_token ||
-        null;
+      return extractAuth(res?.data);
+    },
 
-      if (!token) {
-        throw new Error('Login succeeded but no token was returned by the API.');
-      }
-
-      return { token, raw: res?.data };
+    async logout() {
+      await api.post('/logout');
     },
 
     async me() {
-      // Common endpoint; adjust on backend when ready.
       const res = await api.get('/me');
+      return res?.data;
+    },
+
+    async changePassword({ password, password_confirmation }) {
+      const res = await api.post('/change-password', { password, password_confirmation });
       return res?.data;
     },
   };
 }
 
+function extractAuth(data) {
+  const token =
+    data?.token ||
+    data?.access_token ||
+    null;
+  const user = data?.user || null;
+  if (!token) {
+    throw new Error('Login succeeded but no token was returned by the API.');
+  }
+  return { token, user, raw: data };
+}

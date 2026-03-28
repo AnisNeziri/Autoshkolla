@@ -30,10 +30,10 @@ export default function DashboardLayout() {
       ];
     }
     if (role === ROLES.ADMIN) {
-      return [{ to: '/dashboard/admin', label: 'Admin (Coming soon)', end: true }];
+      return [{ to: '/dashboard/admin', label: 'Schools & analytics', end: true }];
     }
-    if (role === ROLES.CANDIDATE) {
-      return [{ to: '/dashboard/candidate', label: 'Candidate (Coming soon)', end: true }];
+    if (role === ROLES.STUDENT) {
+      return [{ to: '/dashboard/student', label: 'My progress', end: true }];
     }
     return [{ to: '/dashboard', label: 'Dashboard', end: true }];
   }, [role]);
@@ -41,7 +41,7 @@ export default function DashboardLayout() {
   return (
     <div className="dash-shell d-flex">
       <aside
-        className={`dash-sidebar p-3 d-none d-lg-flex flex-column`}
+        className="dash-sidebar p-3 d-none d-lg-flex flex-column"
         aria-label="Sidebar navigation"
       >
         <div className="mb-3">
@@ -81,8 +81,8 @@ export default function DashboardLayout() {
               <button
                 type="button"
                 className="btn btn-outline-danger"
-                onClick={() => {
-                  logout();
+                onClick={async () => {
+                  await logout();
                   navigate('/login');
                 }}
               >
@@ -111,4 +111,3 @@ export default function DashboardLayout() {
     </div>
   );
 }
-

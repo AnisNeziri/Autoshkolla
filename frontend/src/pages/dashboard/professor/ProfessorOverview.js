@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import InlineAlert from '../../../components/common/InlineAlert';
 import { getApiErrorMessage } from '../../../services/api';
 import { useProfessorService } from '../../../hooks/useProfessorService';
-import { calculateStudentProgress } from '../../../utils/progress';
 
 export default function ProfessorOverview() {
   const professorApi = useProfessorService();
@@ -18,7 +18,7 @@ export default function ProfessorOverview() {
       try {
         const data = await professorApi.getStudents();
         if (!alive) return;
-        setStudents(Array.isArray(data) ? data : data?.data || []);
+        setStudents(Array.isArray(data) ? data : []);
       } catch (e) {
         if (!alive) return;
         setError(getApiErrorMessage(e));
@@ -32,54 +32,55 @@ export default function ProfessorOverview() {
   }, [professorApi]);
 
   const metrics = useMemo(() => {
-    const list = Array.isArray(students) ? students : [];
+    const list = students;
     const total = list.length;
-    const avgProgress =
+    const avg =
       total === 0
         ? 0
-        : list.reduce((sum, s) => {
-            const p = calculateStudentProgress({
-              lecturesCompleted: s?.lecturesCompleted ?? s?.lectures_completed ?? 0,
-              drivingCompleted: s?.drivingCompleted ?? s?.driving_completed ?? 0,
-              drivingTotal: s?.drivingTotal ?? s?.driving_total ?? null,
-              writtenTestPassed: Boolean(s?.writtenTestPassed ?? s?.written_test_passed ?? false),
-              drivingTestScheduled: Boolean(s?.drivingTestDate ?? s?.driving_test_date ?? null),
-            });
-            return sum + p;
-          }, 0) / total;
-
-    return {
-      totalStudents: total,
-      averageProgressPct: Math.round(avgProgress * 100),
-    };
+        : Math.round(
+            list.reduce((sum, s) => sum + (Number(s.progress_percent) || 0), 0) / total
+          );
+    return { totalStudents: total, averageProgress: avg };
   }, [students]);
 
   return (
     <div className="d-flex flex-column gap-3">
       <div className="dash-card p-4">
-        <div className="fw-semibold fs-5">Professor Overview</div>
+        <div className="fw-semibold fs-5">Professor overview</div>
         <div className="text-secondary mt-1">
-          Quick snapshot of your assigned candidates and their progress.
+          Manage your students, lectures, driving sessions, and exams from the Students section.
         </div>
+        <Link to="/dashboard/professor/students" className="btn btn-primary mt-3">
+          Go to students
+        </Link>
       </div>
 
       {error ? <InlineAlert title="API error" message={error} /> : null}
 
       <div className="row g-3">
-        <div className="col-12 col-md-6">
+        <div className="col-md-4">
           <div className="dash-card p-4">
-            <div className="text-secondary small">Assigned students</div>
+            <div className="text-secondary small">Your students</div>
             <div className="fs-2 fw-bold">{loading ? '—' : metrics.totalStudents}</div>
           </div>
         </div>
-        <div className="col-12 col-md-6">
+        <div className="col-md-4">
           <div className="dash-card p-4">
-            <div className="text-secondary small">Average progress</div>
-            <div className="fs-2 fw-bold">{loading ? '—' : `${metrics.averageProgressPct}%`}</div>
+            <div className="text-secondary small">Avg. progress</div>
+            <div className="fs-2 fw-bold">{loading ? '—' : `${metrics.averageProgress}%`}</div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="dash-card p-4">
+            <div className="text-secondary small">Quick link</div>
+            <div className="mt-2">
+              <Link to="/dashboard/professor/students" className="btn btn-outline-primary btn-sm">
+                Open list
+              </Link>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
