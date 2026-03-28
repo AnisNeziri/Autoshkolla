@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Professor;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProfessorGroup;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\StudentProgressService;
@@ -26,6 +27,7 @@ class StudentController extends Controller
 
         $students = Student::query()
             ->where('professor_id', $prof->id)
+            ->with(['professorGroup'])
             ->withCount(['lectures', 'drivingSessions'])
             ->orderBy('registered_at', 'desc')
             ->get()
@@ -50,6 +52,11 @@ class StudentController extends Controller
                 Rule::unique('student', 'email'),
             ],
             'theoretical_group' => ['nullable', 'string', 'max:100'],
+            'professor_group_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('professor_groups', 'id')->where('professor_id', $prof->id),
+            ],
         ]);
 
         $plainPassword = Str::random(12);
@@ -74,11 +81,12 @@ class StudentController extends Controller
                 'user_id' => $user->id,
                 'professor_id' => $prof->id,
                 'theoretical_group' => $data['theoretical_group'] ?? null,
+                'professor_group_id' => $data['professor_group_id'] ?? null,
                 'registered_at' => now(),
             ]);
         });
 
-        $studentRow->load(['lectures', 'drivingSessions', 'exams']);
+        $studentRow->load(['lectures', 'drivingSessions', 'exams', 'professorGroup']);
 
         return response()->json([
             'student' => $this->transformStudentDetail($studentRow),
@@ -91,6 +99,7 @@ class StudentController extends Controller
     public function show(Request $request, int $id)
     {
         $student = $this->findOwnedOrFail($request, $id);
+        $student->loadMissing(['lectures', 'drivingSessions', 'exams', 'professorGroup']);
 
         return response()->json($this->transformStudentDetail($student));
     }
@@ -99,13 +108,22 @@ class StudentController extends Controller
     {
         $student = $this->findOwnedOrFail($request, $id);
 
+        $prof = $request->user();
+
         $data = $request->validate([
             'theoretical_group' => ['nullable', 'string', 'max:100'],
+            'professor_group_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('professor_groups', 'id')->where('professor_id', $prof->id),
+            ],
         ]);
 
         $student->update($data);
 
-        return response()->json($this->transformStudentDetail($student->fresh()));
+        return response()->json(
+            $this->transformStudentDetail($student->fresh(['lectures', 'drivingSessions', 'exams', 'professorGroup']))
+        );
     }
 
     public function destroy(Request $request, int $id)
@@ -149,7 +167,7 @@ class StudentController extends Controller
 
     private function transformStudentSummary(Student $s): array
     {
-        $s->loadMissing(['exams']);
+        $s->loadMissing(['exams', 'professorGroup']);
         $p = $this->progress->compute($s);
 
         $written = $s->exams->firstWhere('lloji_provimit', 'written');
@@ -162,6 +180,7 @@ class StudentController extends Controller
             'surname' => $s->surname,
             'email' => $s->email,
             'theoretical_group' => $s->theoretical_group,
+            'professor_group' => $this->transformProfessorGroup($s->professorGroup),
             'lectures_count' => $p['lectures_total'],
             'lectures_present' => $p['lectures_present'],
             'driving_sessions_count' => $p['driving_sessions_total'],
@@ -174,7 +193,7 @@ class StudentController extends Controller
 
     private function transformStudentDetail(Student $s): array
     {
-        $s->load(['lectures', 'drivingSessions', 'exams']);
+        $s->load(['lectures', 'drivingSessions', 'exams', 'professorGroup']);
         $p = $this->progress->compute($s);
 
         $written = $s->exams->firstWhere('lloji_provimit', 'written');
@@ -187,6 +206,7 @@ class StudentController extends Controller
             'surname' => $s->surname,
             'email' => $s->email,
             'theoretical_group' => $s->theoretical_group,
+            'professor_group' => $this->transformProfessorGroup($s->professorGroup),
             'progress' => $p,
             'lectures' => $s->lectures->sortBy('lecture_date')->values()->map(fn ($l) => [
                 'id' => $l->id,
@@ -208,6 +228,20 @@ class StudentController extends Controller
                 'exam_date' => $practical->exam_date?->format('Y-m-d'),
                 'passed' => (bool) $practical->Rezultati,
             ] : null,
+        ];
+    }
+
+    private function transformProfessorGroup(?ProfessorGroup $g): ?array
+    {
+        if (! $g) {
+            return null;
+        }
+
+        return [
+            'id' => $g->id,
+            'name' => $g->name,
+            'lecture_days' => $g->lecture_days,
+            'schedule_time' => $g->schedule_time,
         ];
     }
 }

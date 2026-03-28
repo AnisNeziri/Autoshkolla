@@ -24,6 +24,22 @@ export function createProfessorService({ getToken }) {
       return api.delete(`/professor/students/${studentId}`).then((r) => r?.data);
     },
 
+    getGroups() {
+      return api.get('/professor/groups').then((r) => r?.data || []);
+    },
+
+    createGroup(payload) {
+      return api.post('/professor/groups', payload).then((r) => r?.data);
+    },
+
+    updateGroup(groupId, payload) {
+      return api.put(`/professor/groups/${groupId}`, payload).then((r) => r?.data);
+    },
+
+    deleteGroup(groupId) {
+      return api.delete(`/professor/groups/${groupId}`).then((r) => r?.data);
+    },
+
     addLecture(studentId, payload) {
       return api
         .post(`/professor/students/${studentId}/lectures`, {

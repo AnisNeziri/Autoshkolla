@@ -25,7 +25,7 @@ class StudentDashboardController extends Controller
             ], 404);
         }
 
-        $student->load(['lectures', 'drivingSessions', 'exams']);
+        $student->load(['lectures', 'drivingSessions', 'exams', 'professorGroup']);
 
         $p = $this->progress->compute($student);
         $written = $student->exams->firstWhere('lloji_provimit', 'written');
@@ -37,6 +37,14 @@ class StudentDashboardController extends Controller
                 'surname' => $student->surname,
                 'email' => $student->email,
                 'theoretical_group' => $student->theoretical_group,
+                'professor_group' => $student->professorGroup
+                    ? [
+                        'id' => $student->professorGroup->id,
+                        'name' => $student->professorGroup->name,
+                        'lecture_days' => $student->professorGroup->lecture_days,
+                        'schedule_time' => $student->professorGroup->schedule_time,
+                    ]
+                    : null,
             ],
             'progress' => $p,
             'lectures' => $student->lectures->sortBy('lecture_date')->values()->map(fn ($l) => [

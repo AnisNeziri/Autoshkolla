@@ -34,6 +34,7 @@ export default function DashboardLayout() {
     if (role === ROLES.PROFESSOR) {
       return [
         { to: '/dashboard/professor', label: sq.professor.sidebarOverview, end: true },
+        { to: '/dashboard/professor/groups', label: sq.professor.groupsTitle },
         { to: '/dashboard/professor/students', label: sq.professor.studentsTitle },
       ];
     }

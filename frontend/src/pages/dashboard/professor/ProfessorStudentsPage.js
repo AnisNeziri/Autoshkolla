@@ -10,6 +10,7 @@ export default function ProfessorStudentsPage() {
   const professorApi = useProfessorService();
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
@@ -19,14 +20,16 @@ export default function ProfessorStudentsPage() {
     surname: '',
     email: '',
     theoretical_group: '',
+    professor_group_id: '',
   });
 
   const load = async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await professorApi.getStudents();
+      const [data, g] = await Promise.all([professorApi.getStudents(), professorApi.getGroups()]);
       setStudents(Array.isArray(data) ? data : []);
+      setGroups(Array.isArray(g) ? g : []);
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -62,9 +65,10 @@ export default function ProfessorStudentsPage() {
         surname: form.surname.trim(),
         email: form.email.trim(),
         theoretical_group: form.theoretical_group.trim() || undefined,
+        professor_group_id: form.professor_group_id ? Number(form.professor_group_id) : undefined,
       });
       setGeneratedPassword(res?.generated_password || '');
-      setForm({ name: '', surname: '', email: '', theoretical_group: '' });
+      setForm({ name: '', surname: '', email: '', theoretical_group: '', professor_group_id: '' });
       await load();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -208,7 +212,9 @@ export default function ProfessorStudentsPage() {
                       <div className="small text-secondary">{r.email}</div>
                     </td>
                     <td>
-                      <span className="badge text-bg-light">{r.theoretical_group || '—'}</span>
+                      <span className="badge text-bg-light">
+                        {r.professor_group?.name || r.theoretical_group || '—'}
+                      </span>
                     </td>
                     <td>
                       {r.lectures_present ?? 0}/{r.lectures_count ?? 0}

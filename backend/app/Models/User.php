@@ -69,6 +69,11 @@ class User extends Authenticatable
         return $this->hasOne(Student::class, 'user_id');
     }
 
+    public function professorGroups(): HasMany
+    {
+        return $this->hasMany(ProfessorGroup::class, 'professor_id');
+    }
+
     public function isAdmin(): bool
     {
         return strtolower((string) $this->role) === 'admin';

@@ -22,13 +22,19 @@ export default function ProfessorStudentDetailsPage() {
   const [writtenPassed, setWrittenPassed] = useState(false);
   const [drivingTestDate, setDrivingTestDate] = useState('');
   const [theoreticalGroup, setTheoreticalGroup] = useState('');
+  const [professorGroupId, setProfessorGroupId] = useState('');
+  const [groups, setGroups] = useState([]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const s = await professorApi.getStudent(studentId);
+      const [s, g] = await Promise.all([
+        professorApi.getStudent(studentId),
+        professorApi.getGroups(),
+      ]);
       setDetail(s);
+      setGroups(Array.isArray(g) ? g : []);
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -45,6 +51,9 @@ export default function ProfessorStudentDetailsPage() {
     setWrittenPassed(Boolean(detail.written_exam?.passed));
     setDrivingTestDate(detail.practical_exam?.exam_date || '');
     setTheoreticalGroup(detail.theoretical_group || '');
+    setProfessorGroupId(
+      detail.professor_group?.id != null ? String(detail.professor_group.id) : ''
+    );
   }, [detail]);
 
   const progressFraction = useMemo(() => {
@@ -108,7 +117,10 @@ export default function ProfessorStudentDetailsPage() {
     setSaving(true);
     setError('');
     try {
-      await professorApi.updateStudent(studentId, { theoretical_group: theoreticalGroup || null });
+      await professorApi.updateStudent(studentId, {
+        theoretical_group: theoreticalGroup || null,
+        professor_group_id: professorGroupId ? Number(professorGroupId) : null,
+      });
       await refresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -175,6 +187,7 @@ export default function ProfessorStudentDetailsPage() {
 
   const lectures = detail?.lectures || [];
   const sessions = detail?.driving_sessions || [];
+  const pg = detail?.professor_group;
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -188,6 +201,20 @@ export default function ProfessorStudentDetailsPage() {
             </div>
             <div className="fw-semibold fs-5 mt-1">{studentName}</div>
             <div className="small text-secondary">{detail?.email}</div>
+            {pg ? (
+              <div className="mt-3 p-3 rounded-3 bg-light border text-start">
+                <div className="small text-secondary">{sq.professor.assignedGroup}</div>
+                <div className="fw-semibold">{pg.name}</div>
+                <div className="small mt-1">
+                  <span className="text-secondary">{sq.professor.lectureDays}: </span>
+                  {pg.lecture_days || '—'}
+                </div>
+                <div className="small">
+                  <span className="text-secondary">{sq.professor.scheduleTime}: </span>
+                  {pg.schedule_time || '—'}
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="d-flex flex-column align-items-end gap-2" style={{ minWidth: 260 }}>
             <div className="d-flex align-items-center gap-2 w-100">
@@ -210,7 +237,22 @@ export default function ProfessorStudentDetailsPage() {
         </div>
 
         <div className="row g-2 mt-3 align-items-end">
-          <div className="col-md-6">
+          <div className="col-md-4">
+            <label className="form-label small">{sq.professor.selectGroup}</label>
+            <select
+              className="form-select"
+              value={professorGroupId}
+              onChange={(e) => setProfessorGroupId(e.target.value)}
+            >
+              <option value="">{sq.professor.groupNone}</option>
+              {groups.map((grp) => (
+                <option key={grp.id} value={grp.id}>
+                  {grp.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-md-5">
             <label className="form-label small">{sq.professor.details.theoreticalGroup}</label>
             <input
               className="form-control"
@@ -218,8 +260,13 @@ export default function ProfessorStudentDetailsPage() {
               onChange={(e) => setTheoreticalGroup(e.target.value)}
             />
           </div>
-          <div className="col-md-6">
-            <button type="button" className="btn btn-outline-primary" disabled={saving} onClick={saveGroup}>
+          <div className="col-md-3">
+            <button
+              type="button"
+              className="btn btn-outline-primary w-100"
+              disabled={saving}
+              onClick={saveGroup}
+            >
               {sq.professor.details.saveGroupBtn}
             </button>
           </div>

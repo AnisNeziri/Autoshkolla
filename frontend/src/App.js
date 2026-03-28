@@ -15,6 +15,7 @@ import StudentDashboard from './pages/dashboard/student/StudentDashboard';
 import ProfessorOverview from './pages/dashboard/professor/ProfessorOverview';
 import ProfessorStudentsPage from './pages/dashboard/professor/ProfessorStudentsPage';
 import ProfessorStudentDetailsPage from './pages/dashboard/professor/ProfessorStudentDetailsPage';
+import ProfessorGroupsPage from './pages/dashboard/professor/ProfessorGroupsPage';
 import { ROLES } from './auth/roles';
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
 
               <Route element={<ProtectedRoute allowedRoles={[ROLES.PROFESSOR]} />}>
                 <Route path="professor" element={<ProfessorOverview />} />
+                <Route path="professor/groups" element={<ProfessorGroupsPage />} />
                 <Route path="professor/students" element={<ProfessorStudentsPage />} />
                 <Route path="professor/students/:studentId" element={<ProfessorStudentDetailsPage />} />
               </Route>

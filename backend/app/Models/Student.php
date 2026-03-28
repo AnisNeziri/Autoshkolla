@@ -21,6 +21,7 @@ class Student extends Model
         'professor_id',
         'email',
         'theoretical_group',
+        'professor_group_id',
     ];
 
     protected $casts = [
@@ -50,6 +51,11 @@ class Student extends Model
     public function drivingSessions(): HasMany
     {
         return $this->hasMany(StudentDrivingSession::class, 'student_id');
+    }
+
+    public function professorGroup(): BelongsTo
+    {
+        return $this->belongsTo(ProfessorGroup::class, 'professor_group_id');
     }
 
     public function exams(): HasMany

@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Professor\DrivingSessionController;
 use App\Http\Controllers\Professor\ExamController;
 use App\Http\Controllers\Professor\LectureController;
+use App\Http\Controllers\Professor\ProfessorGroupController;
 use App\Http\Controllers\Professor\StudentController as ProfessorStudentController;
 use App\Http\Controllers\Student\StudentDashboardController;
 use App\Http\Controllers\UserController;
@@ -31,6 +32,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:professor')->prefix('professor')->group(function () {
+        Route::get('/groups', [ProfessorGroupController::class, 'index']);
+        Route::post('/groups', [ProfessorGroupController::class, 'store']);
+        Route::put('/groups/{id}', [ProfessorGroupController::class, 'update']);
+        Route::delete('/groups/{id}', [ProfessorGroupController::class, 'destroy']);
+
         Route::get('/students', [ProfessorStudentController::class, 'index']);
         Route::post('/students', [ProfessorStudentController::class, 'store']);
         Route::get('/students/{id}', [ProfessorStudentController::class, 'show']);
