@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import InlineAlert from '../../../components/common/InlineAlert';
 import ProgressBar from '../../../components/common/ProgressBar';
 import { getApiErrorMessage } from '../../../services/api';
@@ -8,12 +8,14 @@ import sq from '../../../i18n/sq';
 
 export default function ProfessorStudentDetailsPage() {
   const { studentId } = useParams();
+  const navigate = useNavigate();
   const professorApi = useProfessorService();
 
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [lectureForm, setLectureForm] = useState({ date: '', time: '', present: true });
   const [sessionForm, setSessionForm] = useState({ date: '', time: '', completed: false });
@@ -115,6 +117,20 @@ export default function ProfessorStudentDetailsPage() {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!window.confirm(sq.professor.deleteStudentConfirm)) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await professorApi.deleteStudent(studentId);
+      navigate('/dashboard/professor/students', { replace: true });
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const toggleLecturePresent = async (lectureId, nextPresent) => {
     try {
       await professorApi.updateLecture(studentId, lectureId, { present: nextPresent });
@@ -163,7 +179,7 @@ export default function ProfessorStudentDetailsPage() {
   return (
     <div className="d-flex flex-column gap-3">
       <div className="dash-card p-4">
-        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div className="d-flex align-items-start justify-content-between flex-wrap gap-2">
           <div>
             <div className="text-secondary small">
               <Link to="/dashboard/professor/students" className="text-decoration-none">
@@ -173,8 +189,8 @@ export default function ProfessorStudentDetailsPage() {
             <div className="fw-semibold fs-5 mt-1">{studentName}</div>
             <div className="small text-secondary">{detail?.email}</div>
           </div>
-          <div style={{ minWidth: 260 }}>
-            <div className="d-flex align-items-center gap-2">
+          <div className="d-flex flex-column align-items-end gap-2" style={{ minWidth: 260 }}>
+            <div className="d-flex align-items-center gap-2 w-100">
               <div className="flex-grow-1">
                 <ProgressBar value={progressFraction} />
               </div>
@@ -182,6 +198,14 @@ export default function ProfessorStudentDetailsPage() {
                 {detail?.progress?.progress_percent ?? 0}%
               </div>
             </div>
+            <button
+              type="button"
+              className="btn btn-outline-danger btn-sm"
+              disabled={deleting || loading}
+              onClick={confirmDelete}
+            >
+              {sq.professor.deleteStudent}
+            </button>
           </div>
         </div>
 

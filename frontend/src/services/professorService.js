@@ -20,6 +20,10 @@ export function createProfessorService({ getToken }) {
       return api.put(`/professor/students/${studentId}`, payload).then((r) => r?.data);
     },
 
+    deleteStudent(studentId) {
+      return api.delete(`/professor/students/${studentId}`).then((r) => r?.data);
+    },
+
     addLecture(studentId, payload) {
       return api
         .post(`/professor/students/${studentId}/lectures`, {

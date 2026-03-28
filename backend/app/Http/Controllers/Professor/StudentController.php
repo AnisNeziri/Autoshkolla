@@ -108,6 +108,26 @@ class StudentController extends Controller
         return response()->json($this->transformStudentDetail($student->fresh()));
     }
 
+    public function destroy(Request $request, int $id)
+    {
+        $student = $this->findOwnedOrFail($request, $id);
+        $user = $student->user;
+
+        DB::transaction(function () use ($student) {
+            $student->lectures()->delete();
+            $student->drivingSessions()->delete();
+            $student->exams()->delete();
+            $student->delete();
+        });
+
+        if ($user) {
+            $user->tokens()->delete();
+            $user->delete();
+        }
+
+        return response()->json(['message' => 'Studenti u fshi.']);
+    }
+
     private function findOwnedOrFail(Request $request, int $id): Student
     {
         /** @var User $prof */
