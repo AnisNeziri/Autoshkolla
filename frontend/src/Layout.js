@@ -7,13 +7,15 @@ const Layout = () => (
   <div className="App">
     <header className="header">
       <nav className="navbar">
-        <h1 className="logo">{sq.brand}</h1>
+        <Link to="/" className="logo text-white text-decoration-none">
+          {sq.brand}
+        </Link>
         <ul className="nav-links">
           <li>
-            <a href="#about">{sq.nav.about}</a>
+            <a href="#features">{sq.home.featuresTitle}</a>
           </li>
           <li>
-            <a href="#features">{sq.home.featuresTitle}</a>
+            <a href="#how">{sq.home.howTitle}</a>
           </li>
           <li>
             <a href="#contact">{sq.nav.contact}</a>
