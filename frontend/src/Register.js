@@ -53,8 +53,9 @@ function Register() {
   };
 
   return (
-    <div className="form-container" style={{ maxWidth: 480 }}>
-      <h2>{sq.auth.registerTitle}</h2>
+    <AuthShell>
+      <div className="form-container" style={{ maxWidth: 480 }}>
+        <h2>{sq.auth.registerTitle}</h2>
       <p className="small text-secondary">{sq.auth.registerHint}</p>
       <form onSubmit={onSubmit}>
         {error ? (
@@ -109,9 +110,9 @@ function Register() {
           {loading ? sq.auth.loadingRegister : sq.auth.submitRegister}
         </button>
       </form>
-      <p className="mt-3 small text-secondary mb-0">
-        {sq.auth.haveAccount} <Link to="/login">{sq.auth.linkLogin}</Link>
-      </p>
+        <p className="mt-3 small text-secondary mb-0">
+          {sq.auth.haveAccount} <Link to="/login">{sq.auth.linkLogin}</Link>
+        </p>
       </div>
     </AuthShell>
   );

@@ -48,8 +48,9 @@ function Login() {
   };
 
   return (
-    <div className="form-container">
-      <h2>{sq.auth.loginTitle}</h2>
+    <AuthShell>
+      <div className="form-container">
+        <h2>{sq.auth.loginTitle}</h2>
       <form onSubmit={onSubmit}>
         {error ? (
           <div className="alert alert-danger text-start" role="alert">
@@ -74,9 +75,9 @@ function Login() {
           {loading ? sq.auth.loadingLogin : sq.auth.submitLogin}
         </button>
       </form>
-      <p className="mt-3 small text-secondary mb-0">
-        {sq.auth.noAccount} <Link to="/register">{sq.auth.linkRegister}</Link>
-      </p>
+        <p className="mt-3 small text-secondary mb-0">
+          {sq.auth.noAccount} <Link to="/register">{sq.auth.linkRegister}</Link>
+        </p>
       </div>
     </AuthShell>
   );
