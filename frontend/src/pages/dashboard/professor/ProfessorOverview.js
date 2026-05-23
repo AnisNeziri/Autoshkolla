@@ -1,0 +1,85 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import InlineAlert from '../../../components/common/InlineAlert';
+import { getApiErrorMessage } from '../../../services/api';
+import { useProfessorService } from '../../../hooks/useProfessorService';
+import sq from '../../../i18n/sq';
+
+export default function ProfessorOverview() {
+  const professorApi = useProfessorService();
+  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await professorApi.getStudents();
+        if (!alive) return;
+        setStudents(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (!alive) return;
+        setError(getApiErrorMessage(e));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [professorApi]);
+
+  const metrics = useMemo(() => {
+    const list = students;
+    const total = list.length;
+    const avg =
+      total === 0
+        ? 0
+        : Math.round(
+            list.reduce((sum, s) => sum + (Number(s.progress_percent) || 0), 0) / total
+          );
+    return { totalStudents: total, averageProgress: avg };
+  }, [students]);
+
+  return (
+    <div className="d-flex flex-column gap-3">
+      <div className="dash-card p-4">
+        <div className="fw-semibold fs-5">{sq.professor.overviewTitle}</div>
+        <div className="text-secondary mt-1">{sq.professor.overviewSubtitle}</div>
+        <Link to="/dashboard/professor/students" className="btn btn-primary mt-3">
+          {sq.professor.goStudents}
+        </Link>
+      </div>
+
+      {error ? <InlineAlert title={sq.errors.apiError} message={error} /> : null}
+
+      <div className="row g-3">
+        <div className="col-md-4">
+          <div className="dash-card p-4">
+            <div className="text-secondary small">{sq.professor.yourStudents}</div>
+            <div className="fs-2 fw-bold">{loading ? '—' : metrics.totalStudents}</div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="dash-card p-4">
+            <div className="text-secondary small">{sq.professor.avgProgress}</div>
+            <div className="fs-2 fw-bold">{loading ? '—' : `${metrics.averageProgress}%`}</div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="dash-card p-4">
+            <div className="text-secondary small">{sq.professor.shortcut}</div>
+            <div className="mt-2">
+              <Link to="/dashboard/professor/students" className="btn btn-outline-primary btn-sm">
+                {sq.professor.openList}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

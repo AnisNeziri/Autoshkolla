@@ -1,0 +1,12 @@
+# Logs / artefakte testimi (jo për git)
+backend/jmeter.log
+*.log
+
+# Dependencies (nëse instalohen lokalisht)
+frontend/node_modules/
+backend/node_modules/
+backend/vendor/
+
+# Env
+.env
+backend/.env

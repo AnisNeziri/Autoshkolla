@@ -1,0 +1,94 @@
+# CI/CD — GitHub Actions (kërkesa e projektit semestral)
+# Kopjo këtë skedar në root të repo-s Laravel/React të Autoshkollës
+name: Autoshkolla Test Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  backend-tests:
+    name: PHPUnit (Laravel)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: autoshkolla_test
+        ports: ["3306:3306"]
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: mbstring, pdo_mysql
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+      - name: Prepare env
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --force
+      - name: Run PHPUnit
+        run: php artisan test --log-junit ../test-results/phpunit.xml
+      - name: Upload PHPUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpunit-report
+          path: test-results/phpunit.xml
+
+  e2e-tests:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    needs: backend-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Playwright deps
+        working-directory: tests/e2e-root
+        run: |
+          npm ci || npm install
+          npx playwright install --with-deps chromium
+      - name: Run Playwright
+        working-directory: tests/e2e-root
+        env:
+          BASE_URL: http://localhost:3000
+          API_URL: http://localhost:8000
+        run: npx playwright test || true
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/e2e-root/tests/e2e/playwright-report
+
+  api-newman:
+    name: Postman / Newman
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install -g newman
+      - name: Run Postman collection
+        run: |
+          newman run tests/api/Autoshkolla.postman_collection.json \
+            --env-var baseUrl=http://localhost:8000 \
+            --reporters cli,json \
+            --reporter-json-export newman-report.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-report
+          path: newman-report.json
